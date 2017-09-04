@@ -37,16 +37,36 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        self.waypoints = []
 
         rospy.spin()
 
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+        if len(self.waypoints) == 0:
+            return
+        
+        # Find the index of the point that is nearest to ego vehicle
+        start_index = 0
+        min_dist = sys.maxint
+        dist = lambda a, b: (a.x - b.x)**2 + (a.y - b.y)**2 + (a.z - b.z)**2
+        for i in range(len(self.waypoints)):
+            cur_dist = dist(msg.pose.position, self.waypoints[i].pose.pose.position)
+            if cur_dist < min_dist:
+                min_dist = cur_dist
+                start_index = i
+        
+        # Create new sets of waypoints (starting from nearest waypoint)
+        lane = Lane()
+        lane.waypoints = []
+        for _ in range(LOOKAHEAD_WPS):
+            if start_index >= len(self.waypoints):
+                break
+            lane.waypoints.append(self.waypoints[start_index])
+            start_index += 1
+        self.final_waypoints_pub.publish(lane)
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+        self.waypoints = waypoints.waypoints
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
