@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import rospy
-import tf
 from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
@@ -87,7 +86,6 @@ class DBWNode(object):
         self.proposed_velocity = (0, 0)
         self.current_velocity = (0, 0)
         self.current_position = (0, 0)
-        self.prev_time = 0
 
         # Kick off the loop operation
         self.loop()
@@ -106,7 +104,7 @@ class DBWNode(object):
             if (self.dbw_enabled==True):
 
                 throttle, brake, steering = self.controller.control(
-                                              sample_time = delta_t,
+                                              sample_time = 0.02,
                                               proposed_velocity = self.proposed_velocity,
                                               current_velocity = self.current_velocity)
                 rospy.loginfo("=== lazzzy  === : throttle: %f, brake: %f, steering: %f",throttle, brake, steering)
