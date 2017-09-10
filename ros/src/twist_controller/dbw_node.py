@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 
 import rospy
+import tf
 from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
+
 import math
 
 from twist_controller import Controller
 from pid import PID
 from yaw_controller import YawController
+from lowpass import LowPassFilter
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
@@ -61,28 +64,30 @@ class DBWNode(object):
         min_speed = 0
         throttle_pid = PID(1, 1, 1, mn=0, mx=1)
         brake_pid = PID(1, 1, 1, mn=0, mx=1)
-
+        steering_pid = PID(4, 1, 2, mn=-math.pi/3, mx=math.pi/3)
         yaw_controller = YawController(wheel_base,
                                        steer_ratio,
                                        min_speed,
                                        max_lat_accel,
                                        max_steer_angle)
-
+        low_pass_filter = LowPassFilter(1, 1)
         self.controller = Controller(throttle_controller = throttle_pid,
                                      brake_controller    = brake_pid,
-                                     steering_controller = yaw_controller)
+                                     steering_controller = yaw_controller,
+                                     steering_adjustment_controller = steering_pid,
+                                     smoothing_filter    = low_pass_filter)
 
         # TODO: Subscribe to all the topics you need to
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb)
         rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
- 
+
         # init valuables
         self.dbw_enabled = False
-        self.proposed_linear_velocity = 0
-        self.proposed_angular_velocity = 0
-        self.current_linear_velocity = 0
-        self.current_angular_velocity = 0
+        self.proposed_velocity = (0, 0)
+        self.current_velocity = (0, 0)
+        self.current_position = (0, 0)
+        self.prev_time = 0
 
         # Kick off the loop operation
         self.loop()
@@ -101,12 +106,10 @@ class DBWNode(object):
             if (self.dbw_enabled==True):
 
                 throttle, brake, steering = self.controller.control(
-                                              sample_time = 0.02,
-                                              linear_velocity  = self.proposed_linear_velocity,
-                                              angular_velocity = self.proposed_angular_velocity,
-                                              current_velocity = self.current_linear_velocity)
-                #steering = self.yaw_controller.get_steering(proposed_linear_velocity, proposed_angular_velocity, current_linear_velocity)
-                rospy.loginfo("=== lazzzy  === : throttle: %f, brake: %f, steering: %f", throttle, brake, steering)
+                                              sample_time = delta_t,
+                                              proposed_velocity = self.proposed_velocity,
+                                              current_velocity = self.current_velocity)
+                rospy.loginfo("=== lazzzy  === : throttle: %f, brake: %f, steering: %f",throttle, brake, steering)
                 self.publish(throttle, brake, steering)
             rate.sleep()
 
@@ -129,13 +132,11 @@ class DBWNode(object):
         self.brake_pub.publish(bcmd)
 
     def twist_cmd_cb(self, msg):
-        self.proposed_linear_velocity = msg.twist.linear.x
-        self.proposed_angular_velocity = msg.twist.angular.z
+        self.proposed_velocity = (msg.twist.linear.x, msg.twist.angular.z)
         self.controller.reset()
 
     def current_velocity_cb(self, msg):
-        self.current_linear_velocity = msg.twist.linear.x
-        self.current_angular_velocity = msg.twist.angular.z
+        self.current_velocity = (msg.twist.linear.x, msg.twist.angular.z)
 
     def dbw_enabled_cb(self, msg):
         self.dbw_enabled = msg.data
