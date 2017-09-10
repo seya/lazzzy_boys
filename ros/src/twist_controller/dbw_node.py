@@ -7,6 +7,8 @@ from geometry_msgs.msg import TwistStamped
 import math
 
 from twist_controller import Controller
+from pid import PID
+from yaw_controller import YawController
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
@@ -31,9 +33,10 @@ that we have created in the `__init__` function.
 
 '''
 
+
 class DBWNode(object):
     def __init__(self):
-        rospy.init_node('dbw_node')
+        rospy.init_node('dbw_node',log_level=rospy.DEBUG)
 
         vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
         fuel_capacity = rospy.get_param('~fuel_capacity', 13.5)
@@ -55,15 +58,38 @@ class DBWNode(object):
 
         # TODO: Create `TwistController` object
         # self.controller = TwistController(<Arguments you wish to provide>)
+        min_speed = 0
+        throttle_pid = PID(1, 1, 1, mn=0, mx=1)
+        brake_pid = PID(1, 1, 1, mn=0, mx=1)
+
+        yaw_controller = YawController(wheel_base,
+                                       steer_ratio,
+                                       min_speed,
+                                       max_lat_accel,
+                                       max_steer_angle)
+
+        self.controller = Controller(throttle_controller = throttle_pid,
+                                     brake_controller    = brake_pid,
+                                     steering_controller = yaw_controller)
 
         # TODO: Subscribe to all the topics you need to
+        rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
+ 
+        # init valuables
+        self.dbw_enabled = False
+        self.proposed_linear_velocity = 0
+        self.proposed_angular_velocity = 0
+        self.current_linear_velocity = 0
+        self.current_angular_velocity = 0
 
+        # Kick off the loop operation
         self.loop()
-
+    
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
-            # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
             # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
             #                                                     <proposed angular velocity>,
@@ -72,6 +98,16 @@ class DBWNode(object):
             #                                                     <any other argument you need>)
             # if <dbw is enabled>:
             #   self.publish(throttle, brake, steer)
+            if (self.dbw_enabled==True):
+
+                throttle, brake, steering = self.controller.control(
+                                              sample_time = 0.02,
+                                              linear_velocity  = self.proposed_linear_velocity,
+                                              angular_velocity = self.proposed_angular_velocity,
+                                              current_velocity = self.current_linear_velocity)
+                #steering = self.yaw_controller.get_steering(proposed_linear_velocity, proposed_angular_velocity, current_linear_velocity)
+                rospy.loginfo("=== lazzzy  === : throttle: %f, brake: %f, steering: %f", throttle, brake, steering)
+                self.publish(throttle, brake, steering)
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
@@ -88,10 +124,21 @@ class DBWNode(object):
 
         bcmd = BrakeCmd()
         bcmd.enable = True
-        bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
+        bcmd.pedal_cmd_type = BrakeCmd.CMD_PERCENT  #other option: BrakeCmd.CMD_TORQUE
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
 
+    def twist_cmd_cb(self, msg):
+        self.proposed_linear_velocity = msg.twist.linear.x
+        self.proposed_angular_velocity = msg.twist.angular.z
+        self.controller.reset()
+
+    def current_velocity_cb(self, msg):
+        self.current_linear_velocity = msg.twist.linear.x
+        self.current_angular_velocity = msg.twist.angular.z
+
+    def dbw_enabled_cb(self, msg):
+        self.dbw_enabled = msg.data
 
 if __name__ == '__main__':
     DBWNode()
