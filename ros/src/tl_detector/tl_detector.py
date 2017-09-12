@@ -10,6 +10,7 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
+import sys
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -100,8 +101,21 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
-        return 0
+		# Waypoints not updated yet
+		    if self.waypoints is None:
+			return None
+	
+		# Find index of closest waypoint
+		closest_waypoint = 0
+		min_dist = sys.maxint
+		dist = lambda a, b: (a.x - b.x)**2 + (a.y - b.y)**2 + (a.z - b.z)**2
+		for i in range(len(self.waypoints.waypoints)):
+			cur_dist = dist(pose.position, 
+			self.waypoints.waypoints[i].pose.pose.position)
+			if cur_dist < min_dist:
+				min_dist = cur_dist
+				closest_waypoint = i
+		    return closest_waypoint
 
 
     def project_to_image_plane(self, point_in_world):
@@ -175,15 +189,29 @@ class TLDetector(object):
         light = None
         light_positions = self.config['light_positions']
         if(self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose)
+        	car_position = self.get_closest_waypoint(self.pose.pose)
 
         #TODO find the closest visible traffic light (if one exists)
+		# Associate each traffic lights to the nearest waypoint
+		light_position_waypoints = []
+		for light_position in light_positions:
+			light_position_pose = Pose()
+			light_position_pose.position.x = light_position[0]
+			light_position_pose.position.y = light_position[1]
+			light_position_waypoints.append(
+			self.get_closest_waypoint(light_position_pose))
+		#print('Light positions:')
+		#print(light_positions)
+		#print('Light position waypoints')
+		#print(light_position_waypoints)
+		#print('Closest waypoint')
+		#if car_position:
+		#	print(self.waypoints.waypoints[car_position])
 
-        if light:
-            state = self.get_light_state(light)
-            return light_wp, state
-        self.waypoints = None
-        return -1, TrafficLight.UNKNOWN
+	if light:
+		state = self.get_light_state(light)
+		return light_wp, state
+	return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
     try:
