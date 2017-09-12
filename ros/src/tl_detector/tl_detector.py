@@ -101,7 +101,18 @@ class TLDetector(object):
 
         """
         #TODO implement
-        return 0
+        if self.waypoints == None:
+            return 0
+
+        closest_index = 0
+        min_dist = float('inf')
+        dist2 = lambda a, b: (a.x - b.x)**2 + (a.y - b.y)**2
+        for i, wp in enumerate(self.waypoints):
+            d = dist2(pose.position, wp.pose.pose.position)
+            if d < min_dist:
+                min_dist = d
+                closest_index = i
+        return closest_index
 
 
     def project_to_image_plane(self, point_in_world):
