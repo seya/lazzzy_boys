@@ -58,6 +58,18 @@ class TLDetector(object):
 		directory_name = 'images'
 		if not os.path.exists(directory_name):
 			os.makedirs(directory_name)
+		directory_name = 'images/red'
+		if not os.path.exists(directory_name):
+			os.makedirs(directory_name)
+		directory_name = 'images/yellow'
+		if not os.path.exists(directory_name):
+			os.makedirs(directory_name)
+		directory_name = 'images/green'
+		if not os.path.exists(directory_name):
+			os.makedirs(directory_name)
+		directory_name = 'images/unknown'
+		if not os.path.exists(directory_name):
+			os.makedirs(directory_name)
 
 		rospy.spin()
 
@@ -201,32 +213,57 @@ class TLDetector(object):
         	car_position = self.get_closest_waypoint(self.pose.pose)
 
         #TODO find the closest visible traffic light (if one exists)
-		# Associate each traffic lights to the nearest waypoint
-		light_position_waypoints = []
-		for light_position in light_positions:
-			light_position_pose = Pose()
-			light_position_pose.position.x = light_position[0]
-			light_position_pose.position.y = light_position[1]
-			light_position_waypoints.append(
-			self.get_closest_waypoint(light_position_pose))
+        if (self.lights == None) or (self.waypoints ==  None):
+            return -1, TrafficLight.UNKNOWN
 
-		# Check if any traffic light is near the vehicle
-		for light_position_waypoint in light_position_waypoints:
-			# Check traffic light status if it is [x] waypoints within vehicle
-			if 0 <= (light_position_waypoint - car_position) < 80:
-				try:
-					print('save image')
-					# Save the image into directory
-					cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, 'bgr8')
-					epoch_time = str(time.time()).replace('.', '')
-					cv2.imwrite(os.path.join('images', epoch_time + '.jpg'), cv_image)
-				except CvBridgeError as e:
-					print(e)
+        # Generate a list of lights with its closest waypoint
+        ### Note: Lights are given by the simulator for test/development purpose
+        ###       They are not available with Carla
+        lights = []
+        for tl in self.lights:
+            closest_wp_position = self.get_closest_waypoint(tl.pose.pose)
+            lights.append((closest_wp_position, tl))
+        lights.sort()
 
-	if light:
-		state = self.get_light_state(light)
-		return light_wp, state
-	return -1, TrafficLight.UNKNOWN
+        first_tl_position = lights[0][0]
+        last_tl_position = lights[-1][0]
+
+        # Find the closest traffic light to the car
+        closest_light_wp_position = len(self.waypoints.waypoints) # set the max number
+        for tl_position, tl in lights:
+            if ((tl_position >= car_position) and (tl_position < closest_light_wp_position) or
+                (car_position > last_tl_position) and (tl_position == first_tl_position)): 
+                closest_light_wp_position = tl_position
+                light = tl
+
+        # Check if any traffic light is near the vehicle
+        for tl_position, tl in lights:
+                # Check traffic light status if it is [x] waypoints within vehicle
+                if 0 <= (tl_position - car_position) < 400 :
+                        try:
+                                print('save image')
+                                # Save the image into directory
+                                cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, 'bgr8')
+                                epoch_time = str(time.time()).replace('.', '')
+                                if light.state == 0:
+                                    cv2.imwrite(os.path.join('images/red', epoch_time + '.jpg'), cv_image)
+                                if light.state == 1:
+                                    cv2.imwrite(os.path.join('images/yellow', epoch_time + '.jpg'), cv_image)
+                                if light.state == 2:
+                                    cv2.imwrite(os.path.join('images/green', epoch_time + '.jpg'), cv_image)
+                                if light.state == 4:
+                                    cv2.imwrite(os.path.join('images/unknown', epoch_time + '.jpg'), cv_image)
+                        except CvBridgeError as e:
+                                print(e)
+
+        if light:
+            #state = self.get_light_state(light)
+            #return light_wp, state
+            rospy.loginfo("=== lazzzy-lights === light: %d, light index: %d, car pos index: %d",
+                           light.state, closest_light_wp_position, car_position)
+            return closest_light_wp_position, light.state
+        self.waypoints = None
+        return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
     try:
