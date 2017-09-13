@@ -42,7 +42,7 @@ class Controller(object):
         steering = steering + self.steering_adjustment_controller.step(angular_velocity_error, sample_time)
         steering = self.smooth_filter.filt(steering)
         #return 1, 0, steering
-        return throttle, brake, steering
+        return 0.2, 0, steering
 
     def reset(self):
         self.throttle_controller.reset()
