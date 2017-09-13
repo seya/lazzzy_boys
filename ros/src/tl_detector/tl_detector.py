@@ -107,7 +107,7 @@ class TLDetector(object):
         closest_index = 0
         min_dist = float('inf')
         dist2 = lambda a, b: (a.x - b.x)**2 + (a.y - b.y)**2
-        for i, wp in enumerate(self.waypoints):
+        for i, wp in enumerate(self.waypoints.waypoints):
             d = dist2(pose.position, wp.pose.pose.position)
             if d < min_dist:
                 min_dist = d
@@ -189,10 +189,35 @@ class TLDetector(object):
             car_position = self.get_closest_waypoint(self.pose.pose)
 
         #TODO find the closest visible traffic light (if one exists)
+        if (self.lights == None) or (self.waypoints ==  None):
+            return -1, TrafficLight.UNKNOWN
+
+        # Generate a list of lights with its closest waypoint
+        ### Note: Lights are given by the simulator for test/development purpose
+        ###       They are not available with Carla
+        lights = []
+        for tl in self.lights:
+            closest_wp_position = self.get_closest_waypoint(tl.pose.pose)
+            lights.append((closest_wp_position, tl))
+        lights.sort()
+
+        first_tl_position = lights[0][0]
+        last_tl_position = lights[-1][0]
+
+        # Find the closest traffic light to the car
+        closest_light_wp_position = len(self.waypoints.waypoints) # set the max number
+        for tl_position, tl in lights:
+            if ((tl_position >= car_position) and (tl_position < closest_light_wp_position) or
+                (car_position > last_tl_position) and (tl_position == first_tl_position)): 
+                closest_light_wp_position = tl_position
+                light = tl
 
         if light:
-            state = self.get_light_state(light)
-            return light_wp, state
+            #state = self.get_light_state(light)
+            #return light_wp, state
+            rospy.loginfo("=== lazzzy-lights === light: %d, light index: %d, car pos index: %d",
+                           light.state, closest_light_wp_position, car_position)
+            return closest_light_wp_position, light.state
         self.waypoints = None
         return -1, TrafficLight.UNKNOWN
 
