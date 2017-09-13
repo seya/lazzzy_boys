@@ -92,17 +92,17 @@ class TLDetector(object):
         self.state_count += 1
 
     def get_closest_waypoint(self, pose):
-        """Identifies the closest path waypoint to the given position
-            https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
-        Args:
-            pose (Pose): position to match a waypoint to
+		"""Identifies the closest path waypoint to the given position
+			https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
+		Args:
+			pose (Pose): position to match a waypoint to
 
-        Returns:
-            int: index of the closest waypoint in self.waypoints
+		Returns:
+			int: index of the closest waypoint in self.waypoints
 
-        """
+		"""
 		# Waypoints not updated yet
-		    if self.waypoints is None:
+		if self.waypoints is None:
 			return None
 	
 		# Find index of closest waypoint
@@ -115,7 +115,7 @@ class TLDetector(object):
 			if cur_dist < min_dist:
 				min_dist = cur_dist
 				closest_waypoint = i
-		    return closest_waypoint
+		return closest_waypoint
 
 
     def project_to_image_plane(self, point_in_world):
