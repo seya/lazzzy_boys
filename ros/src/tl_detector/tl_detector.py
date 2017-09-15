@@ -11,46 +11,55 @@ import tf
 import cv2
 import yaml
 import sys
+from cv_bridge import CvBridge, CvBridgeError
+import os
+import time
 
 STATE_COUNT_THRESHOLD = 3
 
 class TLDetector(object):
     def __init__(self):
-        rospy.init_node('tl_detector')
+		rospy.init_node('tl_detector')
 
-        self.pose = None
-        self.waypoints = None
-        self.camera_image = None
-        self.lights = []
+		self.pose = None
+		self.waypoints = None
+		self.camera_image = None
+		self.lights = []
+		self.a = False
 
-        sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+		sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+		sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
-        '''
-        /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and 
-        helps you acquire an accurate ground truth data source for the traffic light
-        classifier by sending the current color state of all traffic lights in the
-        simulator. When testing on the vehicle, the color state will not be available. You'll need to
-        rely on the position of the light and the camera image to predict it.
-        '''
-        sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
+		'''
+		/vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and 
+		helps you acquire an accurate ground truth data source for the traffic light
+		classifier by sending the current color state of all traffic lights in the
+		simulator. When testing on the vehicle, the color state will not be available. You'll need to
+		rely on the position of the light and the camera image to predict it.
+		'''
+		sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
+		sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
 
-        config_string = rospy.get_param("/traffic_light_config")
-        self.config = yaml.load(config_string)
+		config_string = rospy.get_param("/traffic_light_config")
+		self.config = yaml.load(config_string)
 
-        self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
+		self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
-        self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
-        self.listener = tf.TransformListener()
+		self.bridge = CvBridge()
+		self.light_classifier = TLClassifier()
+		self.listener = tf.TransformListener()
 
-        self.state = TrafficLight.UNKNOWN
-        self.last_state = TrafficLight.UNKNOWN
-        self.last_wp = -1
-        self.state_count = 0
+		self.state = TrafficLight.UNKNOWN
+		self.last_state = TrafficLight.UNKNOWN
+		self.last_wp = -1
+		self.state_count = 0
 
-        rospy.spin()
+		# Create directory to store images captured from simulator
+		directory_name = 'images'
+		if not os.path.exists(directory_name):
+			os.makedirs(directory_name)
+
+		rospy.spin()
 
     def pose_cb(self, msg):
         self.pose = msg
@@ -200,13 +209,19 @@ class TLDetector(object):
 			light_position_pose.position.y = light_position[1]
 			light_position_waypoints.append(
 			self.get_closest_waypoint(light_position_pose))
-		#print('Light positions:')
-		#print(light_positions)
-		#print('Light position waypoints')
-		#print(light_position_waypoints)
-		#print('Closest waypoint')
-		#if car_position:
-		#	print(self.waypoints.waypoints[car_position])
+
+		# Check if any traffic light is near the vehicle
+		for light_position_waypoint in light_position_waypoints:
+			# Check traffic light status if it is [x] waypoints within vehicle
+			if 0 <= (light_position_waypoint - car_position) < 80:
+				try:
+					print('save image')
+					# Save the image into directory
+					cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, 'bgr8')
+					epoch_time = str(time.time()).replace('.', '')
+					cv2.imwrite(os.path.join('images', epoch_time + '.jpg'), cv_image)
+				except CvBridgeError as e:
+					print(e)
 
 	if light:
 		state = self.get_light_state(light)
