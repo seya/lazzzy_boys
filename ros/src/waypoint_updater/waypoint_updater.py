@@ -4,6 +4,7 @@ import sys
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
+from std_msgs.msg import Int32
 
 import math
 
@@ -33,12 +34,15 @@ class WaypointUpdater(object):
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb, queue_size=1)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
         self.waypoints = []
+        self.base_velocities = []
+        self.traffic_light_waypoint_index = -1
+        self.red_light_on = True
 
         rospy.spin()
 
@@ -59,20 +63,40 @@ class WaypointUpdater(object):
         # Create new sets of waypoints (starting from nearest waypoint)
         lane = Lane()
         lane.waypoints = []
+        next_index = start_index
         for _ in range(LOOKAHEAD_WPS):
-            if start_index >= len(self.waypoints):
-                #We reached the end of the waypoint list, let's add the waypoints from the start of the list
-                start_index = 0
-            lane.waypoints.append(self.waypoints[start_index])
-            start_index += 1
+            if next_index >= len(self.waypoints):
+                next_index = 0
+            next_waypoint = self.waypoints[next_index]
+
+            # set the velocity
+            velocity = self.base_velocities[next_index]
+            if self.red_light_on == True:
+                steps_to_light = self.traffic_light_waypoint_index - next_index
+                if  steps_to_light > 0 and steps_to_light < 100:
+                    velocity = 0
+
+            self.set_waypoint_velocity(self.waypoints, next_index, velocity)
+
+            lane.waypoints.append(self.waypoints[next_index])
+            next_index += 1
+
+        # publish final waypoints
         self.final_waypoints_pub.publish(lane)
+
 
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints.waypoints
+        self.base_velocities = [self.waypoints[i].twist.twist.linear.x for i in range(len(self.waypoints))]
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
-        pass
+        self.red_light_on = True
+        if msg.data == -1:
+            self.red_light_on = False
+        else:
+            self.red_light_on = True
+            self.traffic_light_waypoint_index = msg.data
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
