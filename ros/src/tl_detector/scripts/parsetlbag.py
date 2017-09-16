@@ -22,6 +22,7 @@ class ParseTLBag(object):
 
         
         self.bridge = CvBridge()
+        self.image_id = 0
        
         rospy.spin()
 
@@ -29,7 +30,15 @@ class ParseTLBag(object):
         self.pose = msg
 
     def image_cb(self, msg):
-        self.camera_image = msg
+        camera_image = msg
+        cv_image = self.bridge.imgmsg_to_cv2(camera_image, "bgr8")
+        img_folder = '/home/student/workspace/system_integration/traffic_light_classifier/data/traffic_light_bag_files/images/'
+        img_file_name = "{}B_{:07d}.jpg".format(img_folder, self.image_id)
+        rospy.loginfo("{}".format(img_file_name))
+        cv2.imwrite(img_file_name,cv_image)
+        self.image_id += 1
+
+
        
 
   
