@@ -11,7 +11,7 @@ DATASET_SIZE = {
     'site_eval': 372,
     'site_train': 1488,
 }
-NUM_CLASSES = 2
+NUM_CLASSES = 4
 
 ITEMS_TO_DESCRIPTIONS = {
     'image': 'image data',
@@ -43,7 +43,7 @@ def get_dataset(data_sources, num_samples):
         'image/encoded': tf.FixedLenFeature((), tf.string, default_value=''),
         'image/format': tf.FixedLenFeature((), tf.string, default_value='jpg'),
         'image/filename': tf.FixedLenFeature((), tf.string, default_value='000000'),
-        'image/label': tf.VarLenFeature(dtype=tf.int64),
+        'image/label': tf.FixedLenFeature([], tf.int64, default_value=tf.zeros([], dtype=tf.int64))
     }
     items_to_handlers = {
         'image': slim.tfexample_decoder.Image('image/encoded', 'image/format'),   

@@ -7,6 +7,7 @@ from preprocessing import inception_preprocessing
 from nets import inception_v4
 import numpy as np
 import cv2
+import math
 
 
 
@@ -49,7 +50,7 @@ class PrepareData():
 #         data_provider = slim.dataset_data_provider.DatasetDataProvider(
 #             dataset, common_queue_capacity=32,
 #             common_queue_min=8)
-        image_raw, label = data_provider.get(['image', 'label'])
+        image_raw, label,filename = data_provider.get(['image', 'label','filename'])
         
         # Preprocess image for usage by Inception.
         #No image augmentation for now, but resize normalization
@@ -63,15 +64,15 @@ class PrepareData():
         
     
         # Batch it up.
-        images, images_raw, labels = tf.train.batch(
-              [image, image_raw, label],
+        images, images_raw, labels, filenames = tf.train.batch(
+              [image, image_raw, label, filename],
               batch_size=batch_size,
               num_threads=1,
               capacity=2 * batch_size)
         
         tf.summary.image('image_raw',images_raw)
         tf.summary.image('image',images)
-        return images, images_raw, labels
+        return images, images_raw, labels, filenames
     def get_input(self, split_name, is_training=True, batch_size=32):
         if is_training:
             data_sources = "./data/tfrecords/site_train*.tfrecord"
@@ -85,16 +86,21 @@ class PrepareData():
    
     def run(self):
         with tf.Graph().as_default():    
-            batch_data = self.get_input("train", is_training=False)
+            batch_data = self.get_input("train", is_training=True, batch_size=32)
             
             with tf.Session('') as sess:
                 init = tf.global_variables_initializer()
                 sess.run(init)
                 with slim.queues.QueueRunners(sess):  
-                    while True:  
-                         
-                        images, images_raw, labels = sess.run(list(batch_data))
-                        print(labels)
+#                     while True:  
+                    filename_list = []
+                    for _ in range(math.ceil(self.dataset.num_samples/32)):
+                        images, images_raw, labels,filenames = sess.run(list(batch_data))
+#                         print(labels)
+                        print(filenames)
+                        filename_list.extend(filenames)
+                    fs = np.unique(filename_list)
+                    print(len(fs))
                         
         
         return

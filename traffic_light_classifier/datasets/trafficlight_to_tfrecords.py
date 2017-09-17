@@ -22,7 +22,7 @@ import glob
 from sklearn.model_selection import train_test_split
 
 TEST_SIZE_RATIO = 0.2
-class_names_to_ids = {"RED":0, "YELLOW":1, "GREEN":1, "UNKNOWN":1}
+class_names_to_ids = {"RED":0, "YELLOW":1, "GREEN":2, "UNKNOWN":3}
 NUM_PER_SHARD = 1000
 
 
