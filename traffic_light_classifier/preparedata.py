@@ -1,4 +1,4 @@
-from datasets import flowers
+from datasets import trafficlight_datasets
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import tensorflow.contrib.slim as slim
@@ -73,8 +73,14 @@ class PrepareData():
         tf.summary.image('image',images)
         return images, images_raw, labels
     def get_input(self, split_name, is_training=True, batch_size=32):
-        flowers_data_dir = './data/flowers'
-        self.dataset = flowers.get_split(split_name, flowers_data_dir)
+        if is_training:
+            data_sources = "./data/tfrecords/site_train*.tfrecord"
+            num_samples = trafficlight_datasets.DATASET_SIZE['site_train']
+        else:
+            data_sources = "./data/tfrecords/site_eval*.tfrecord"
+            num_samples = trafficlight_datasets.DATASET_SIZE['site_eval']
+            
+        self.dataset = trafficlight_datasets.get_dataset(data_sources, num_samples)
         return self.load_batch(self.dataset, batch_size=batch_size, is_training=is_training)
    
     def run(self):
