@@ -15,16 +15,13 @@ class EvaluateModel(PrepareData):
         return
     def parse_param(self):
         parser = argparse.ArgumentParser()
-        parser.add_argument('-s', '--split_name',  help='which split of dataset to use',  default="")
-        parser.add_argument('-c', '--checkpoint_path',  help='which checkpoint to use',  default="")
+        parser.add_argument('-s', '--split_name',  help='which split of dataset to use',  default="train")
+        parser.add_argument('-c', '--checkpoint_path',  help='which checkpoint to use',  default="./logs/")
         args = parser.parse_args()
         
-        self.checkpoint_path = "./logs/"
-        self.split_name = "train"
-        if args.checkpoint_path != "":
-            self.checkpoint_path = args.checkpoint_path
-        if args.split_name != "":
-            self.split_name = args.split_name
+       
+        self.checkpoint_path = args.checkpoint_path
+        self.split_name = args.split_name
             
         return
     
@@ -37,7 +34,7 @@ class EvaluateModel(PrepareData):
         _ = slim.get_or_create_global_step()
         
       
-        net.input, _ , net.labels = self.get_input(self.split_name, is_training=False,batch_size=self.batch_size)
+        net.input, _ , net.labels,_ = self.get_input(self.split_name, is_training=False,batch_size=self.batch_size)
         net.build_eval_graph()
         
         
@@ -51,11 +48,12 @@ class EvaluateModel(PrepareData):
         tf.logging.info('Evaluating checkpoint_path={}, split={}'.format(checkpoint_file, self.split_name))
        
        
-       
+        logdir = './logs/evals/' + self.split_name
+        
         slim.evaluation.evaluate_once(
             master='',
             checkpoint_path=checkpoint_file,
-            logdir='./logs/evals/' + self.split_name,
+            logdir=logdir,
             num_evals=num_batches,
             eval_op=net.names_to_updates ,
             variables_to_restore=slim.get_variables_to_restore())

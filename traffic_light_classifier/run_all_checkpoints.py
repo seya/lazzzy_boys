@@ -43,14 +43,19 @@ class RunAllCheckpoints(object):
     def parse_param(self):
         parser = argparse.ArgumentParser()
         parser.add_argument('-l', '--latest',  help='evaluate only the latest checkpoints',  action='store_true')
+        parser.add_argument('-c', '--checkpoint_path',  help='which checkpoint(directory) to use',  default="./logs/")
         args = parser.parse_args()
-        self.checkpoint_path = './logs/'
+        
+        self.checkpoint_path = args.checkpoint_path
         self.check_only_latest = args.latest
             
         return
     def run_all_checkpoints(self):
         
         sel_checkpoints = self.get_all_checkpoints(self.checkpoint_path)
+        #for tine tuning checkpoint path, we can skip the first chckpoint since it's already calcuated 
+        if self.checkpoint_path == './logs/finetune/':
+            sel_checkpoints = sel_checkpoints[1:]
                 
         
         for checkpoint in sel_checkpoints:

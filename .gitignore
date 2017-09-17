@@ -2,7 +2,7 @@
 
 build
 devel
-
+traffic_light_classifier/logs/
 profile.tmp
 .project
 .pydevproject

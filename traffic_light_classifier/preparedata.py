@@ -74,7 +74,7 @@ class PrepareData():
         tf.summary.image('image',images)
         return images, images_raw, labels, filenames
     def get_input(self, split_name, is_training=True, batch_size=32):
-        if is_training:
+        if split_name == "train":
             data_sources = "./data/tfrecords/site_train*.tfrecord"
             num_samples = trafficlight_datasets.DATASET_SIZE['site_train']
         else:

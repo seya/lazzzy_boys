@@ -1,7 +1,6 @@
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 from tensorflow.python.training import saver as tf_saver
-from nets.flower_model import TLModel
 from preparedata import PrepareData
 
 
