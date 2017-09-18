@@ -4,6 +4,7 @@ from nets.tl_model import TLModel
 from preparedata import PrepareData
 import math
 import argparse
+import time
 
 
 
@@ -49,7 +50,7 @@ class EvaluateModel(PrepareData):
        
        
         logdir = './logs/evals/' + self.split_name
-        
+        start = time.time()
         slim.evaluation.evaluate_once(
             master='',
             checkpoint_path=checkpoint_file,
@@ -57,6 +58,11 @@ class EvaluateModel(PrepareData):
             num_evals=num_batches,
             eval_op=net.names_to_updates ,
             variables_to_restore=slim.get_variables_to_restore())
+        # Log time spent.
+        elapsed = time.time()
+        elapsed = elapsed - start
+        print('Time spent : %.3f seconds.' % elapsed)
+        print('Time spent per BATCH: %.3f seconds.' % (elapsed / num_batches))
        
                     
         
