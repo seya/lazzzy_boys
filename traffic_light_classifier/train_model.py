@@ -11,7 +11,7 @@ class TrainModel(TrainModelBase):
     def config_training(self):
         #customization
          
-        self.max_number_of_steps = 1000
+        self.max_number_of_steps = 2000
         self.learning_rate = 0.01
         self.learning_rate_decay_type = 'fixed'
         self.optimizer = 'adam'
@@ -29,7 +29,7 @@ class TrainModel(TrainModelBase):
             self.checkpoint_path =  './logs'
             self.checkpoint_exclude_scopes = None
             self.trainable_scopes = None
-            self.max_number_of_steps += 5000
+            self.max_number_of_steps += 30000
             self.learning_rate = 0.0001
         
         

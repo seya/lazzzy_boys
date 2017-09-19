@@ -31,6 +31,10 @@ class TLModel(object):
         #before building the graph, we need to specify the input and labels, and variables_to_train for the models
         self.add_inference_node(is_training = True)
         self.add_loss_node()
+        correct_prediction = tf.equal(tf.argmax(self.output,1), self.labels)
+        accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+        accuracy = tf.Print(accuracy, [accuracy], "train_accuracy")
+        tf.summary.scalar('train_accuracy', accuracy)
         return
     def add_inference_node(self, is_training=True):
         with slim.arg_scope(inception_v4.inception_v4_arg_scope()):

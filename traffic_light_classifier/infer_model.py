@@ -15,18 +15,19 @@ import numpy as np
 class EvaluateModel(PrepareData):
     def __init__(self):
         PrepareData.__init__(self)  
-        self.batch_size = 32
-        
+       
         return
     def parse_param(self):
         parser = argparse.ArgumentParser()
         parser.add_argument('-s', '--split_name',  help='which split of dataset to use',  default="train")
         parser.add_argument('-c', '--checkpoint_path',  help='which checkpoint to use',  default="./logs/finetune/")
+        parser.add_argument('-b', '--batch_size',  help='batch size to use',  default=1)
         args = parser.parse_args()
         
        
         self.checkpoint_path = args.checkpoint_path
         self.split_name = args.split_name
+        self.batch_size = args.batch_size
             
         return
     
