@@ -83,6 +83,7 @@ class TLDetector(object):
         self.lights = msg.lights
 
     def image_cb(self, msg):
+        return
         """Identifies red lights in the incoming camera image and publishes the index
             of the waypoint closest to the red light's stop line to /traffic_waypoint
 
