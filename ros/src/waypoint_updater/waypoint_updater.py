@@ -62,7 +62,7 @@ class WaypointUpdater(object):
         for _ in range(LOOKAHEAD_WPS):
             if start_index >= len(self.waypoints):
                 #We reached the end of the waypoint list, let's add the waypoints from the start of the list
-				start_index = 0
+                start_index = 0
             lane.waypoints.append(self.waypoints[start_index])
             start_index += 1
         self.final_waypoints_pub.publish(lane)
