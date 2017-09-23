@@ -241,7 +241,7 @@ class TLDetector(object):
         # Check if any traffic light is near the vehicle
         for tl_position, tl in lights:
                 # Check traffic light status if it is [x] waypoints within vehicle
-                if 0 <= (tl_position - car_position) < 400 :
+                if (2 <= (tl_position - car_position) < 400) and (light.state == self.last_state)  :
                         try:
                                 print('save image')
                                 # Save the image into directory
