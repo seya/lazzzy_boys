@@ -83,7 +83,6 @@ class TLDetector(object):
         self.lights = msg.lights
 
     def image_cb(self, msg):
-        return
         """Identifies red lights in the incoming camera image and publishes the index
             of the waypoint closest to the red light's stop line to /traffic_waypoint
 
@@ -208,6 +207,7 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+        return -1, TrafficLight.UNKNOWN
         light = None
 
         # List of positions that correspond to the line to stop in front of for a given intersection
