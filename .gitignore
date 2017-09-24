@@ -7,3 +7,4 @@ profile.tmp
 .project
 .pydevproject
 traffic_light_classifier/data/
+simulator/

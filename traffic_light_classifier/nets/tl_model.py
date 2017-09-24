@@ -2,6 +2,7 @@ import tensorflow as tf
 import nets.inception_v4  as inception_v4
 
 from tensorflow.contrib import slim
+import datasets.trafficlight_datasets as trafficlight_datasets
 
 
 class TLModel(object):
@@ -38,7 +39,7 @@ class TLModel(object):
         return
     def add_inference_node(self, is_training=True):
         with slim.arg_scope(inception_v4.inception_v4_arg_scope()):
-            self.output, self.end_points = inception_v4.inception_v4(self.input, num_classes=4, 
+            self.output, self.end_points = inception_v4.inception_v4(self.input, num_classes=trafficlight_datasets.NUM_CLASSES, 
                                                                   is_training=is_training, dropout_keep_prob=0.8,create_aux_logits=True)
         return
     def add_loss_node(self):

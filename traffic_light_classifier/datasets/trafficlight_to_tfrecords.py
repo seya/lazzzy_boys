@@ -23,16 +23,21 @@ from sklearn.model_selection import train_test_split
 
 TEST_SIZE_RATIO = 0.2
 class_names_to_ids = {"RED":0, "YELLOW":1, "GREEN":2, "UNKNOWN":3}
-NUM_PER_SHARD = 1000
+
 
 
 
 
 class TL2Tfrecords(object):
     def __init__(self):
-        self.dataset_dirs = ["../data/traffic_light_bag_files/images"]
-        self.name='site'
+#         self.dataset_dirs = ["../data/traffic_light_bag_files/images"]
+#         self.name='site'
+#         NUM_PER_SHARD = 1000
+        
+        self.dataset_dirs = ["../data/sim_images"]
+        self.name='sim'
         self.output_dir = "../data/tfrecords/"
+        self.num_per_shard = 2500
         return
 
     
@@ -40,7 +45,7 @@ class TL2Tfrecords(object):
         output_filename = '%s_%05d-of-%05d-total%05d.tfrecord' % (name, shard_id + 1, num_shard,records_num)
         return os.path.join(output_dir, output_filename)
     def __write2tffiles(self, filenames, name, output_dir):
-        num_per_shard = NUM_PER_SHARD
+        num_per_shard = self.num_per_shard
         num_shard = int(math.ceil(len(filenames) / float(num_per_shard)))
          
         for shard_id in range(num_shard):
@@ -99,7 +104,16 @@ class TL2Tfrecords(object):
         
         for dataset_dir in self.dataset_dirs:
             for filename in glob.iglob(dataset_dir + '/**/*.jpg', recursive=True):
+                if 'UNKNOWN' in filename:
+                    continue
 #                 print(filename)
+                base_file_name = filename.split('/')[-1][:-4]
+                if  base_file_name.endswith('_318'):
+                    light_distance = int(base_file_name.split('_')[-2])
+                    if light_distance > 80:
+                        # for traffic light 318, the traffic light is not within camera image when it's too far away
+                        continue
+                    
                 X.append(filename)
                 y.append(filename.split('/')[-2])
         X_train, X_test, _, _ = train_test_split(X, y,

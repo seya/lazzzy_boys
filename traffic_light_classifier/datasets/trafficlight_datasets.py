@@ -10,8 +10,10 @@ slim = tf.contrib.slim
 DATASET_SIZE = {
     'site_eval': 372,
     'site_train': 1488,
+    'sim_eval': 1997,
+    'sim_train': 7986,
 }
-NUM_CLASSES = 4
+NUM_CLASSES = 3
 
 ITEMS_TO_DESCRIPTIONS = {
     'image': 'image data',

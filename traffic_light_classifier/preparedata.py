@@ -75,11 +75,11 @@ class PrepareData():
         return images, images_raw, labels, filenames
     def get_input(self, split_name, is_training=True, batch_size=32):
         if split_name == "train":
-            data_sources = "./data/tfrecords/site_train*.tfrecord"
-            num_samples = trafficlight_datasets.DATASET_SIZE['site_train']
+            data_sources = "./data/tfrecords/sim_train*.tfrecord"
+            num_samples = trafficlight_datasets.DATASET_SIZE['sim_train']
         else:
-            data_sources = "./data/tfrecords/site_eval*.tfrecord"
-            num_samples = trafficlight_datasets.DATASET_SIZE['site_eval']
+            data_sources = "./data/tfrecords/sim_eval*.tfrecord"
+            num_samples = trafficlight_datasets.DATASET_SIZE['sim_eval']
             
         self.dataset = trafficlight_datasets.get_dataset(data_sources, num_samples)
         return self.load_batch(self.dataset, batch_size=batch_size, is_training=is_training)
@@ -87,6 +87,7 @@ class PrepareData():
     def run(self):
         with tf.Graph().as_default():    
             batch_data = self.get_input("train", is_training=True, batch_size=32)
+#             batch_data = self.get_input("eval", is_training=False, batch_size=32)
             
             with tf.Session('') as sess:
                 init = tf.global_variables_initializer()
