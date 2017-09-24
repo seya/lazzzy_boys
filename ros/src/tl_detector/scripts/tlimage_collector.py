@@ -128,7 +128,7 @@ class TLImageCollector(object):
         
         
         folder = self.img_folder + folder
-        img_file_name = "{}{:07d}_{}.jpg".format(folder, self.image_id,int(meter_dist))
+        img_file_name = "{}{:07d}_{}_{}.jpg".format(folder, self.image_id,int(meter_dist), light_id)
         cv2.imwrite(img_file_name, cv_image)
         self.image_id += 1
         
