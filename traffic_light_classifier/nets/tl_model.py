@@ -18,7 +18,7 @@ class TLModel(object):
         return
     def add_evalmetrics_node(self):
         if self.labels is None:
-            continue
+            return
         predictions = tf.argmax(self.output, 1)
     
         # Define the metrics:

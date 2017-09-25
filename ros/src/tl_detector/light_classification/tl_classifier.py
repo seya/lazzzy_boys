@@ -1,16 +1,11 @@
-import os
-import math
-import random
-
-import numpy as np
 import tensorflow as tf
 import cv2
-import traffic_light_classifier.nets.inception_v4 as inception_v4
+import sys
 
-
-from tensorflow.contrib import slim
-
-from traffic_light_classifier.preprocessing import inception_preprocessing
+sys.path.append('./traffic_light_classifier')
+from nets import inception_v4
+from preprocessing import inception_preprocessing
+from nets.tl_model import TLModel
 
 class TLClassifier(object):
     def __init__(self):
@@ -33,11 +28,13 @@ class TLClassifier(object):
         
         # Restore SSD model.
 #         ckpt_filename = tf.train.latest_checkpoint('../logs/finetune/')
-        ckpt_filename = tf.train.latest_checkpoint('./tlmodel/model.ckpt-26000')
+        ckpt_filename = './tlmodel/model.ckpt-26000'
         
+        isess = tf.InteractiveSession()
         isess.run(tf.global_variables_initializer())
         saver = tf.train.Saver()
         saver.restore(isess, ckpt_filename)
+        self.isess = isess
         return
 
     def get_classification(self, image):
@@ -51,12 +48,14 @@ class TLClassifier(object):
 
         """
         #TODO implement light color prediction
-        predictons = isess.run([self.predictions],feed_dict={self.img_input: image})
+        predictons = self.isess.run(self.predictions,feed_dict={self.img_input: image})
+        
         return predictons[0]
     
     def run(self):
-        img_path = '/home/student/workspace/system_integration/traffic_light_classifier/data/sim_images/RED/0000000_41_318.jpg'
+        img_path = '/home/student/workspace/system_integration/traffic_light_classifier/data/sim_images/GREEN/0000120_147_784.jpg'
         img = cv2.imread(img_path, cv2.IMREAD_COLOR)
+        img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
         res = self.get_classification(img)
         print("traffic light={}".format(res))
         return

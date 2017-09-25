@@ -8,3 +8,4 @@ profile.tmp
 .pydevproject
 traffic_light_classifier/data/
 simulator/
+ros/src/tl_detector/light_classification/tlmodel/
