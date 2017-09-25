@@ -10,6 +10,10 @@ from cv_bridge import CvBridge
 import tf
 import cv2
 import yaml
+import sys
+from cv_bridge import CvBridge, CvBridgeError
+import os
+import time
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -62,7 +66,7 @@ class TLDetector(object):
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
-            of the waypoint closest to the red light to /traffic_waypoint
+            of the waypoint closest to the red light's stop line to /traffic_waypoint
 
         Args:
             msg (Image): image from car-mounted camera
@@ -91,17 +95,30 @@ class TLDetector(object):
         self.state_count += 1
 
     def get_closest_waypoint(self, pose):
-        """Identifies the closest path waypoint to the given position
-            https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
-        Args:
-            pose (Pose): position to match a waypoint to
+		"""Identifies the closest path waypoint to the given position
+			https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
+		Args:
+			pose (Pose): position to match a waypoint to
 
-        Returns:
-            int: index of the closest waypoint in self.waypoints
+		Returns:
+			int: index of the closest waypoint in self.waypoints
 
-        """
-        #TODO implement
-        return 0
+		"""
+		# Waypoints not updated yet
+		if self.waypoints is None:
+			return None
+	
+		# Find index of closest waypoint
+		closest_waypoint = 0
+		min_dist = sys.maxint
+		dist = lambda a, b: (a.x - b.x)**2 + (a.y - b.y)**2 + (a.z - b.z)**2
+		for i in range(len(self.waypoints.waypoints)):
+			cur_dist = dist(pose.position, 
+			self.waypoints.waypoints[i].pose.pose.position)
+			if cur_dist < min_dist:
+				min_dist = cur_dist
+				closest_waypoint = i
+		return closest_waypoint
 
 
     def project_to_image_plane(self, point_in_world):
@@ -168,21 +185,68 @@ class TLDetector(object):
             location and color
 
         Returns:
-            int: index of waypoint closes to the upcoming traffic light (-1 if none exists)
+            int: index of waypoint closes to the upcoming stop line for a traffic light (-1 if none exists)
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
         return -1, TrafficLight.UNKNOWN
         light = None
-        light_positions = self.config['light_positions']
+
+        # List of positions that correspond to the line to stop in front of for a given intersection
+        stop_line_positions = self.config['stop_line_positions']
         if(self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose)
+        	car_position = self.get_closest_waypoint(self.pose.pose)
 
         #TODO find the closest visible traffic light (if one exists)
+        if (self.lights == None) or (self.waypoints ==  None):
+            return -1, TrafficLight.UNKNOWN
+
+        # Generate a list of lights with its closest waypoint
+        ### Note: Lights are given by the simulator for test/development purpose
+        ###       They are not available with Carla
+        lights = []
+        for tl in self.lights:
+            closest_wp_position = self.get_closest_waypoint(tl.pose.pose)
+            lights.append((closest_wp_position, tl))
+        lights.sort()
+
+        first_tl_position = lights[0][0]
+        last_tl_position = lights[-1][0]
+
+        # Find the closest traffic light to the car
+        closest_light_wp_position = len(self.waypoints.waypoints) # set the max number
+        for tl_position, tl in lights:
+            if ((tl_position >= car_position) and (tl_position < closest_light_wp_position) or
+                (car_position > last_tl_position) and (tl_position == first_tl_position)): 
+                closest_light_wp_position = tl_position
+                light = tl
+
+        # Check if any traffic light is near the vehicle
+        for tl_position, tl in lights:
+                # Check traffic light status if it is [x] waypoints within vehicle
+                if (2 <= (tl_position - car_position) < 400) and (light.state == self.last_state)  :
+                        try:
+                                print('save image')
+                                # Save the image into directory
+                                cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, 'bgr8')
+                                epoch_time = str(time.time()).replace('.', '')
+                                if light.state == 0:
+                                    cv2.imwrite(os.path.join('images/red', epoch_time + '.jpg'), cv_image)
+                                if light.state == 1:
+                                    cv2.imwrite(os.path.join('images/yellow', epoch_time + '.jpg'), cv_image)
+                                if light.state == 2:
+                                    cv2.imwrite(os.path.join('images/green', epoch_time + '.jpg'), cv_image)
+                                if light.state == 4:
+                                    cv2.imwrite(os.path.join('images/unknown', epoch_time + '.jpg'), cv_image)
+                        except CvBridgeError as e:
+                                print(e)
 
         if light:
-            state = self.get_light_state(light)
-            return light_wp, state
+            #state = self.get_light_state(light)
+            #return light_wp, state
+            rospy.loginfo("=== lazzzy-lights === light: %d, light index: %d, car pos index: %d",
+                           light.state, closest_light_wp_position, car_position)
+            return closest_light_wp_position, light.state
         self.waypoints = None
         return -1, TrafficLight.UNKNOWN
 

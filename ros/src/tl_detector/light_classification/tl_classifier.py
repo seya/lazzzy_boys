@@ -65,8 +65,9 @@ class TLClassifier(object):
     
     def run(self):
         traffic_clasiffication_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../traffic_light_classifier/data'))
-        dataset_dir = traffic_clasiffication_path + '/sim_images/GREEN'
-        img_paths = glob.glob(dataset_dir + '/**/*.jpg', recursive=True)
+        dataset_dir = traffic_clasiffication_path + '/sim_images'
+#         dataset_dir = traffic_clasiffication_path + '/sim_images/GREEN'
+        img_paths = glob.glob(dataset_dir + '/**/*.jpg')
 #         img_paths = ['sim_images/GREEN/0000120_147_784.jpg',
 #                          'sim_images/GREEN/0000119_148_784.jpg',
 #                          'sim_images/GREEN/0000119_148_784.jpg',
@@ -74,16 +75,18 @@ class TLClassifier(object):
 #                          'sim_images/YELLOW/0000164_103_784.jpg']
 #         img_paths = [traffic_clasiffication_path + '/'+ img_path for img_path in img_paths]
         correct_pred = 0
-        for img_path in img_paths:
+        for i, img_path in enumerate(img_paths):
             img = cv2.imread(img_path, cv2.IMREAD_COLOR)
             
             pred_label = self.get_classification(img) 
-            gt_label = trafficlight_to_tfrecords.class_names_to_ids[img_paths[0].split('/')[-2]]
+            gt_label = trafficlight_to_tfrecords.class_names_to_ids[img_path.split('/')[-2]]
             
             if pred_label == gt_label:
                 correct_pred += 1.0
             else:
                 print("actual={},pred={},image={}".format(gt_label, pred_label,img_path))
+            print("{}/{},acc={}".format(i, len(img_paths),correct_pred/float(i+1)))
+            
         print("acc={}".format(correct_pred/len(img_paths)))
             
             
