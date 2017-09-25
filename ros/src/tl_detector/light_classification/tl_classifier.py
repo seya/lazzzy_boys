@@ -61,12 +61,19 @@ class TLClassifier(object):
         return predictons[0]
     
     def run(self):
-        img_path = '/home/student/workspace/system_integration/traffic_light_classifier/data/sim_images/GREEN/0000120_147_784.jpg'
-        img = cv2.imread(img_path, cv2.IMREAD_COLOR)
-        
-        res = self.get_classification(img)
-        
-        print("traffic light={}".format(res))
+        traffic_clasiffication_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../traffic_light_classifier/data'))
+        img_paths = ['sim_images/GREEN/0000120_147_784.jpg',
+                         'sim_images/GREEN/0000119_148_784.jpg',
+                         'sim_images/GREEN/0000119_148_784.jpg',
+                         'sim_images/RED/0000052_40_318.jpg',
+                         'sim_images/YELLOW/0000164_103_784.jpg']
+        img_paths = [traffic_clasiffication_path + '/'+ img_path for img_path in img_paths]
+        for img_path in img_paths:
+            img = cv2.imread(img_path, cv2.IMREAD_COLOR)
+            
+            res = self.get_classification(img)
+            
+            print("traffic light={}".format(res))
         return
 
 
