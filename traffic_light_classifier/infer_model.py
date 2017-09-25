@@ -44,7 +44,7 @@ class EvaluateModel(PrepareData):
         net.build_eval_graph()
         
         
-        num_batches = math.ceil(self.dataset.num_samples / float(self.batch_size))
+        num_batches = int(math.ceil(self.dataset.num_samples / float(self.batch_size)))
         # Standard evaluation loop.
        
         if tf.gfile.IsDirectory(self.checkpoint_path):
@@ -64,27 +64,28 @@ class EvaluateModel(PrepareData):
             with slim.queues.QueueRunners(sess):
                 sess.run(tf.initialize_local_variables())
                 init_fn(sess)
-                start = time.time()
+                
 #                 np_predictions, np_images_raw, np_labels = sess.run([predictions, images_raw, labels])
                 y_true = []
                 y_pred = []
-                for _ in range(num_batches):
+                for i in range(num_batches):
+                    start = time.time()
                     np_predictions, np_labels = sess.run([predictions,net.labels])
+                    elapsed = time.time()
+                    elapsed = elapsed - start
+                    print('{}/{}, {:.4f} seconds.'.format(i, num_batches, elapsed))
                     y_true.extend(np_labels.tolist())
                     y_pred.extend(np_predictions.tolist())
                 # Log time spent.
                 y_true  = np.array(y_true)
                 y_pred = np.array(y_pred)
-                elapsed = time.time()
-                elapsed = elapsed - start
-                print('Time spent : %.3f seconds.' % elapsed)
-                print('Time spent per BATCH: %.3f seconds.' % (elapsed / num_batches))
-                print('Time spent per image: %.3f seconds.' % (elapsed / (self.batch_size*num_batches)))
+               
+                
+#                 print('Time spent per BATCH: %.3f seconds.' % (elapsed / num_batches))
+#                 print('Time spent per image: %.3f seconds.' % (elapsed / (self.batch_size*num_batches)))
                 
                 print("f1_score={}".format(f1_score(y_true, y_pred, average=None)))
                 print("accuracy_score={}".format(accuracy_score(y_true, y_pred)))
-                
-                #log the evaluation metrics
                 
         return
     
