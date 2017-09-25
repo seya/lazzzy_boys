@@ -11,16 +11,23 @@ import os
 import math
 import sys
 
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+# print(sys.path)
+from  light_classification.tl_classifier import TLClassifier
+
 STATE_COUNT_THRESHOLD = 3
 
 class TLImageCollector(object):
     def __init__(self):
-        rospy.init_node('tlimage_collector')
+        rospy.init_node('test_classifier')
 
         self.pose = None
         self.waypoints = None
         self.camera_image = None
         self.lights = None
+        self.tl_classifier = TLClassifier()
+        self.correct_pred = 0
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -38,6 +45,7 @@ class TLImageCollector(object):
         self.bridge = CvBridge()
         self.image_id = 0
         self.last_state = TrafficLight.UNKNOWN
+        
        
         
         # Create directory to store images captured from simulator
@@ -112,25 +120,33 @@ class TLImageCollector(object):
             # the car is too near or too far away from the traffic light
             return
         
-        rospy.loginfo("ligth_id={}, distance={:.1f}, light_state={}".format(light_id, meter_dist, light_state))
+        
         #store the image
         cv_image = self.bridge.imgmsg_to_cv2(camera_image, 'bgr8')
         
-        if light_state == TrafficLight.RED:
-            folder = "RED/"
-        elif light_state == TrafficLight.YELLOW:
-            folder = "YELLOW/"
-
-        elif light_state == TrafficLight.GREEN:
-            folder = "GREEN/"
-        else:
-            folder = "UNKNOWN/"
-        
-        
-        folder = self.img_folder + folder
-        img_file_name = "{}{:07d}_{}_{}.jpg".format(folder, self.image_id,int(meter_dist), light_id)
-        cv2.imwrite(img_file_name, cv_image)
+        pred_state = self.tl_classifier.get_classification(cv_image)
         self.image_id += 1
+        if(pred_state == light_state):
+            self.correct_pred += 1.0
+        acc = self.correct_pred/self.image_id
+        rospy.loginfo("ligth_id={}, distance={:.1f}, light_state={}/{}, acc={:.2f},total={}".format(light_id, 
+                                                                                                    meter_dist, light_state,pred_state, acc,self.image_id))
+        
+#         if light_state == TrafficLight.RED:
+#             folder = "RED/"
+#         elif light_state == TrafficLight.YELLOW:
+#             folder = "YELLOW/"
+# 
+#         elif light_state == TrafficLight.GREEN:
+#             folder = "GREEN/"
+#         else:
+#             folder = "UNKNOWN/"
+#         
+#         
+#         folder = self.img_folder + folder
+#         img_file_name = "{}{:07d}_{}_{}.jpg".format(folder, self.image_id,int(meter_dist), light_id)
+#         cv2.imwrite(img_file_name, cv_image)
+        
         
         return
 
