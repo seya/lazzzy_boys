@@ -63,11 +63,26 @@ class TLClassifier(object):
         
         return predictons[0]
     
-    def run(self):
+    def get_image_paths(self):
+        X = []
         traffic_clasiffication_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../traffic_light_classifier/data'))
-        dataset_dir = traffic_clasiffication_path + '/sim_images'
-#         dataset_dir = traffic_clasiffication_path + '/sim_images/GREEN'
-        img_paths = glob.glob(dataset_dir + '/**/*.jpg')
+        dataset_dirs = [traffic_clasiffication_path + '/sim_images_25']
+        for dataset_dir in dataset_dirs:
+            for filename in glob.iglob(dataset_dir + '/**/*.jpg'):
+                if 'UNKNOWN' in filename:
+                    continue
+#                 print(filename)
+                base_file_name = filename.split('/')[-1][:-4]
+                if  base_file_name.endswith('_318'):
+                    light_distance = int(base_file_name.split('_')[-2])
+                    if light_distance > 80:
+                        # for traffic light 318, the traffic light is not within camera image when it's too far away
+                        continue
+                    
+                X.append(filename)
+        return  X
+    def run(self):
+        
 #         img_paths = ['sim_images/GREEN/0000120_147_784.jpg',
 #                          'sim_images/GREEN/0000119_148_784.jpg',
 #                          'sim_images/GREEN/0000119_148_784.jpg',
@@ -75,6 +90,7 @@ class TLClassifier(object):
 #                          'sim_images/YELLOW/0000164_103_784.jpg']
 #         img_paths = [traffic_clasiffication_path + '/'+ img_path for img_path in img_paths]
         correct_pred = 0
+        img_paths = self.get_image_paths()
         for i, img_path in enumerate(img_paths):
             img = cv2.imread(img_path, cv2.IMREAD_COLOR)
             
@@ -85,8 +101,8 @@ class TLClassifier(object):
                 correct_pred += 1.0
             else:
                 print("actual={},pred={},image={}".format(gt_label, pred_label,img_path))
-            print("{}/{},acc={}".format(i, len(img_paths),correct_pred/float(i+1)))
-            
+            base_file_name = img_path.split('/')[-2] + img_path.split('/')[-1][:-4]
+            print("{}/{}: {}/{}, {}, acc={}".format(i+1, len(img_paths), gt_label,pred_label, base_file_name, correct_pred/float(i+1)))
         print("acc={}".format(correct_pred/len(img_paths)))
             
             
