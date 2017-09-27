@@ -82,8 +82,9 @@ class ConvertModel(PrepareData):
         return
     
     
-    def run(self): 
-        self.use_optimized_model()
+    def run(self):
+        self.convert() 
+#         self.use_optimized_model()
 #         self.use_raw_model()
                 
         return
