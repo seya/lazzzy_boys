@@ -7,11 +7,13 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../.
 # print(sys.path)
 from nets import inception_v4
 from preprocessing import inception_preprocessing
-from datasets import trafficlight_to_tfrecords
+# from datasets import trafficlight_to_tfrecords
 from nets.tl_model import TLModel
 import time
 import glob
 
+
+class_names_to_ids = {"RED":0, "YELLOW":1, "GREEN":2, "UNKNOWN":3}
 class TLClassifier(object):
     def __init__(self):
         # Input placeholder.
@@ -95,7 +97,7 @@ class TLClassifier(object):
             img = cv2.imread(img_path, cv2.IMREAD_COLOR)
             
             pred_label = self.get_classification(img, show_time=True) 
-            gt_label = trafficlight_to_tfrecords.class_names_to_ids[img_path.split('/')[-2]]
+            gt_label = class_names_to_ids[img_path.split('/')[-2]]
             
             if pred_label == gt_label:
                 correct_pred += 1.0
