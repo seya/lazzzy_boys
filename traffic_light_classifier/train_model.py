@@ -29,7 +29,7 @@ class TrainModel(TrainModelBase):
             self.checkpoint_path =  './logs'
             self.checkpoint_exclude_scopes = None
             self.trainable_scopes = None
-            self.max_number_of_steps += 25000
+            self.max_number_of_steps += 28000
             self.learning_rate = 0.0001
         
         

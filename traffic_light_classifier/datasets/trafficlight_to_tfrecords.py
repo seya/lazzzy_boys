@@ -22,7 +22,7 @@ import glob
 from sklearn.model_selection import train_test_split
 
 TEST_SIZE_RATIO = 0.2
-class_names_to_ids = {"RED":0, "YELLOW":1, "GREEN":2, "UNKNOWN":3}
+class_names_to_ids = {"RED":0, "YELLOW":1, "GREEN":2}
 
 
 
@@ -30,14 +30,15 @@ class_names_to_ids = {"RED":0, "YELLOW":1, "GREEN":2, "UNKNOWN":3}
 
 class TL2Tfrecords(object):
     def __init__(self):
-#         self.dataset_dirs = ["../data/traffic_light_bag_files/images"]
-#         self.name='site'
-#         NUM_PER_SHARD = 1000
-        
-        self.dataset_dirs = ["../data/sim_images"]
-        self.name='sim'
+        self.dataset_dirs = ["../data/traffic_light_bag_files/images"]
+        self.name='site'
         self.output_dir = "../data/tfrecords/"
-        self.num_per_shard = 2500
+        self.num_per_shard = 1000
+        
+#         self.dataset_dirs = ["../data/sim_images"]
+#         self.name='sim'
+#         self.output_dir = "../data/tfrecords/"
+#         self.num_per_shard = 2500
         return
 
     

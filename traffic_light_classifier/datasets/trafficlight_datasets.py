@@ -8,8 +8,8 @@ import tensorflow as tf
 slim = tf.contrib.slim
 
 DATASET_SIZE = {
-    'site_eval': 372,
-    'site_train': 1488,
+    'site_eval': 186,
+    'site_train': 744,
     'sim_eval': 1997,
     'sim_train': 7986,
 }

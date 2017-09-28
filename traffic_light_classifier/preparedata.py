@@ -74,12 +74,25 @@ class PrepareData():
         tf.summary.image('image',images)
         return images, images_raw, labels, filenames
     def get_input(self, split_name, is_training=True, batch_size=32):
+#         if split_name == "train":
+#             data_sources = "./data/tfrecords/sim_train*.tfrecord"
+#             num_samples = trafficlight_datasets.DATASET_SIZE['sim_train']
+#         else:
+#             data_sources = "./data/tfrecords/sim_eval*.tfrecord"
+#             num_samples = trafficlight_datasets.DATASET_SIZE['sim_eval']
+#         if split_name == "train":
+#             data_sources = "./data/tfrecords/site_train*.tfrecord"
+#             num_samples = trafficlight_datasets.DATASET_SIZE['site_train']
+#         else:
+#             data_sources = "./data/tfrecords/site_eval*.tfrecord"
+#             num_samples = trafficlight_datasets.DATASET_SIZE['site_eval']
+        
         if split_name == "train":
-            data_sources = "./data/tfrecords/sim_train*.tfrecord"
-            num_samples = trafficlight_datasets.DATASET_SIZE['sim_train']
+            data_sources = "./data/tfrecords/*_train*.tfrecord"
+            num_samples = trafficlight_datasets.DATASET_SIZE['sim_train'] + trafficlight_datasets.DATASET_SIZE['site_train']
         else:
-            data_sources = "./data/tfrecords/sim_eval*.tfrecord"
-            num_samples = trafficlight_datasets.DATASET_SIZE['sim_eval']
+            data_sources = "./data/tfrecords/*_eval*.tfrecord"
+            num_samples = trafficlight_datasets.DATASET_SIZE['sim_eval'] + trafficlight_datasets.DATASET_SIZE['site_eval']
             
         self.dataset = trafficlight_datasets.get_dataset(data_sources, num_samples)
         return self.load_batch(self.dataset, batch_size=batch_size, is_training=is_training)
