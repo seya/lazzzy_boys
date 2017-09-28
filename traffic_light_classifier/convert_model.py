@@ -2,12 +2,6 @@ import tensorflow as tf
 import tensorflow.contrib.slim as slim
 from nets.tl_model import TLModel
 from preparedata import PrepareData
-import math
-import argparse
-import time
-from sklearn.metrics import f1_score
-from sklearn.metrics import accuracy_score
-import numpy as np
 from nets import inception_v4
 import cv2
 from preprocessing import inception_preprocessing
