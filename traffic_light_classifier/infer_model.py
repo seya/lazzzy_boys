@@ -21,7 +21,7 @@ class EvaluateModel(PrepareData):
         parser = argparse.ArgumentParser()
         parser.add_argument('-s', '--split_name',  help='which split of dataset to use',  default="train")
         parser.add_argument('-c', '--checkpoint_path',  help='which checkpoint to use',  default="./logs/finetune/")
-        parser.add_argument('-b', '--batch_size',  help='batch size to use',  default=1)
+        parser.add_argument('-b', '--batch_size',  help='batch size to use',  type=int,default=1)
         args = parser.parse_args()
         
        
