@@ -1,5 +1,5 @@
 import rospy
-import pandas as pd
+#import pandas as pd
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
 
@@ -13,7 +13,7 @@ class Controller(object):
         self.smooth_filter = kwargs['smoothing_filter']
         self.steering_adjustment_controller = kwargs['steering_adjustment_controller']
         self.previous_time = 0
-        self.data_frame = pd.DataFrame(index=[], columns=['time', 'delta_t', 'throttle', 'brake', 'proposed', 'current'])
+        #self.data_frame = pd.DataFrame(index=[], columns=['time', 'delta_t', 'throttle', 'brake', 'proposed', 'current'])
         self.counter = 1
 
     def control(self, *args, **kwargs):
