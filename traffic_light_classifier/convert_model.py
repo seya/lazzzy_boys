@@ -26,7 +26,7 @@ class ConvertModel(PrepareData):
       
         # Standard evaluation loop.
        
-        checkpoint_file = './logs/finetune/model.ckpt-26000'
+        checkpoint_file = './logs/finetune/model.ckpt-29000'
         tf.logging.info('convert checkpoint_path={}'.format(checkpoint_file))
         
         probabilities = tf.nn.softmax(net.output)
