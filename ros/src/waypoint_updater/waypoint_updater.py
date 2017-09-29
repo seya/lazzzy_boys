@@ -26,6 +26,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
 REDUCE_ZONE = 30 # Reduce zone before the stop line (m)
+MOVE_ON_LINE = 5 # Car should move on if it passes the line beyond the stop_line (m)
 STOP_BUFFER = 4 # Buffer for the overshoot
 
 class WaypointUpdater(object):
@@ -52,7 +53,7 @@ class WaypointUpdater(object):
         self.loop()
 
     def loop(self):
-        rate = rospy.Rate(1)
+        rate = rospy.Rate(10)
         while not rospy.is_shutdown():
             rate.sleep()
             if self.current_pose is None:
@@ -68,14 +69,14 @@ class WaypointUpdater(object):
                 if next_index >= len(self.waypoints):
                     next_index = 0
 
-                #distance_from_start = self.distance(self.waypoints, start_index, next_index)
                 distance_to_stop = self.distance(self.waypoints, next_index, self.stop_line_index - STOP_BUFFER)
+                distance_past_stop_line = self.distance(self.waypoints, self.stop_line_index, next_index)
 
                 # Base Speed
                 velocity = self.base_velocities[next_index]
 
                 # Reduce Speed
-                if distance_to_stop < REDUCE_ZONE:
+                if distance_to_stop < REDUCE_ZONE and distance_past_stop_line < MOVE_ON_LINE:
                     velocity = min(math.sqrt(2*distance_to_stop), self.base_velocities[next_index])
                     rospy.loginfo("lazzzy: stop_line_index: %f, next_index: %f, velocity: %f", self.stop_line_index, next_index, velocity)
 
