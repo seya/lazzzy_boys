@@ -60,7 +60,8 @@ class TLClassifier(object):
     def get_image_paths(self):
         X = []
         traffic_clasiffication_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../traffic_light_classifier/data'))
-        dataset_dirs = [traffic_clasiffication_path + '/sim_images']
+#         dataset_dirs = [traffic_clasiffication_path + '/traffic_light_bag_files_test/images']
+        dataset_dirs = [traffic_clasiffication_path + '/sim_images_test']
         for dataset_dir in dataset_dirs:
             for filename in glob.iglob(dataset_dir + '/**/*.jpg'):
                 if 'UNKNOWN' in filename:
@@ -74,6 +75,7 @@ class TLClassifier(object):
                         continue
                     
                 X.append(filename)
+        X.sort()
         return  X
     def run(self):
         
