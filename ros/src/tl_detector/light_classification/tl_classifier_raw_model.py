@@ -12,27 +12,35 @@ from nets.tl_model import TLModel
 import time
 import glob
 
+
 class_names_to_ids = {"RED":0, "YELLOW":1, "GREEN":2, "UNKNOWN":3}
 class TLClassifier(object):
     def __init__(self):
-
+        # Input placeholder.
+       
+        
+        self.img_input = tf.placeholder(tf.uint8, shape=(None, None, 3))
+        # Evaluation pre-processing: resize to SSD net shape.
+        image_size = inception_v4.inception_v4.default_image_size
+        image_pre = inception_preprocessing.preprocess_image(self.img_input, image_size, image_size, is_training=False)
+       
+        
+        
+        # Define the SSD model.
+        net = TLModel()
+        net.input = tf.expand_dims(image_pre, 0)
+        net.build_eval_graph()
+        probabilities = tf.nn.softmax(net.output)
+        self.predictions = tf.argmax(probabilities, 1)
+        
+        # Restore SSD model.
         ckpt_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../traffic_light_classifier'))
-#         model_file = ckpt_path + '/logs/deploy/graph_frozen.pb'
-        model_file = ckpt_path + '/logs/deploy/graph_optimized.pb'
+        ckpt_filename = ckpt_path + '/logs/finetune/model.ckpt-29000'
         
-        with tf.gfile.GFile(model_file, 'rb') as f:
-            graph_def_optimized = tf.GraphDef()
-            graph_def_optimized.ParseFromString(f.read())
-        
-        G = tf.Graph()
-        
-        
-        
-        isess = tf.InteractiveSession(graph=G)
-        tf.import_graph_def(graph_def_optimized, name='')
-        self.predictions = G.get_tensor_by_name('predictions:0')
-        self.img_input = G.get_tensor_by_name('inputs:0')
-        
+        isess = tf.InteractiveSession()
+        isess.run(tf.global_variables_initializer())
+        saver = tf.train.Saver()
+        saver.restore(isess, ckpt_filename)
         self.isess = isess
         return
 
@@ -60,6 +68,7 @@ class TLClassifier(object):
     def get_image_paths(self):
         X = []
         traffic_clasiffication_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../traffic_light_classifier/data'))
+#         dataset_dirs = [traffic_clasiffication_path + '/traffic_light_bag_files/images']
         dataset_dirs = [traffic_clasiffication_path + '/sim_images']
         for dataset_dir in dataset_dirs:
             for filename in glob.iglob(dataset_dir + '/**/*.jpg'):
