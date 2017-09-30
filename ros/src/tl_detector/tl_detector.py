@@ -10,8 +10,14 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
+import math
 
 STATE_COUNT_THRESHOLD = 3
+
+LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+REDUCE_ZONE = 30 # Reduce zone before the stop line (m)
+MOVE_ON_LINE = 5 # Car should move on if it passes the line beyond the stop_line (m)
+STOP_BUFFER = 4 # Buffer for the overshoot
 
 class TLDetector(object):
     def __init__(self):
@@ -20,8 +26,14 @@ class TLDetector(object):
         self.pose = None
         self.waypoints = None
         self.camera_image = None
-        self.lights = []
-
+        self.lights = None
+        self.state = TrafficLight.UNKNOWN
+        self.last_state = TrafficLight.UNKNOWN
+        self.last_wp = -1
+        self.state_count = 0
+        self.has_image = False
+        rospy.loginfo("TLDetector initialization start")
+        self.light_classifier = TLClassifier()
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
@@ -42,15 +54,37 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
-        self.listener = tf.TransformListener()
+        
+        self.listener = tf.TransformListener()       
+        rospy.loginfo("TLDetector initialization done")
+        
+        self.loop()
+        return
+    def loop(self):
+        rate = rospy.Rate(10)
+        while not rospy.is_shutdown():
+            rate.sleep()
+            if (self.lights == None) or (self.waypoints ==  None):
+                continue
+            light_wp, state = self.process_traffic_lights()
 
-        self.state = TrafficLight.UNKNOWN
-        self.last_state = TrafficLight.UNKNOWN
-        self.last_wp = -1
-        self.state_count = 0
-
-        rospy.spin()
+            '''
+            Publish upcoming red lights at camera frequency.
+            Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
+            of times till we start using it. Otherwise the previous stable state is
+            used.
+            '''
+            if self.state != state:
+                self.state_count = 0
+                self.state = state
+            elif self.state_count >= STATE_COUNT_THRESHOLD:
+                self.last_state = self.state
+                light_wp = light_wp if (state == TrafficLight.RED or state == TrafficLight.YELLOW )else -1
+                self.last_wp = light_wp
+                self.upcoming_red_light_pub.publish(Int32(light_wp))
+            else:
+                self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+            self.state_count += 1
 
     def pose_cb(self, msg):
         self.pose = msg
@@ -73,25 +107,7 @@ class TLDetector(object):
         """
         self.has_image = True
         self.camera_image = msg
-        light_wp, state = self.process_traffic_lights()
-
-        '''
-        Publish upcoming red lights at camera frequency.
-        Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
-        of times till we start using it. Otherwise the previous stable state is
-        used.
-        '''
-        if self.state != state:
-            self.state_count = 0
-            self.state = state
-        elif self.state_count >= STATE_COUNT_THRESHOLD:
-            self.last_state = self.state
-            light_wp = light_wp if state == TrafficLight.RED else -1
-            self.last_wp = light_wp
-            self.upcoming_red_light_pub.publish(Int32(light_wp))
-        else:
-            self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-        self.state_count += 1
+        return
 
 
     def get_closest_waypoint(self, pose):
@@ -176,7 +192,7 @@ class TLDetector(object):
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
-        x, y = self.project_to_image_plane(light.pose.pose.position)
+#         x, y = self.project_to_image_plane(light.pose.pose.position)
 
         #TODO use light location to zoom in on traffic light in image
 
@@ -223,17 +239,29 @@ class TLDetector(object):
                 light = tl
 
         if light:
-            #state = self.get_light_state(light)
+            
             #return light_wp, state
             stop_line_position = -1
             for position in self.stop_line_positions:
                 if closest_light_wp_position > position:
                     stop_line_position = position
-            rospy.loginfo("=== lazzzy-lights === light: %d, light index: %d, stop_line: %d, car pos index: %d",
-                           light.state, closest_light_wp_position, stop_line_position, car_position)
+            distance_to_stop = self.distance(self.waypoints.waypoints, car_position, stop_line_position - STOP_BUFFER)
+            if(distance_to_stop <= REDUCE_ZONE + 10):
+                light.state = self.get_light_state(light)
+            else:
+                light.state = TrafficLight.UNKNOWN
+            rospy.loginfo("=== lazzzy-lights === light: %d, light index: %d, stop_line: %d, car pos index: %d,distance_to_stop=%1f",
+                           light.state, closest_light_wp_position, stop_line_position, car_position,distance_to_stop)
             return stop_line_position, light.state
-        self.waypoints = None
+#         self.waypoints = None
         return -1, TrafficLight.UNKNOWN
+    def distance(self, waypoints, wp1, wp2):
+        dist = 0
+        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+        for i in range(wp1, wp2+1):
+            dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
+            wp1 = i
+        return dist
 
 if __name__ == '__main__':
     try:

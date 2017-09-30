@@ -317,7 +317,7 @@ def inception_v4(inputs, num_classes=1001, is_training=True,
           end_points['Logits'] = logits
           end_points['Predictions'] = tf.nn.softmax(logits, name='Predictions')
     return logits, end_points
-inception_v4.default_image_size = 259
+inception_v4.default_image_size = 299
 
 
 inception_v4_arg_scope = inception_utils.inception_arg_scope

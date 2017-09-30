@@ -56,7 +56,7 @@ class WaypointUpdater(object):
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():
             rate.sleep()
-            if self.current_pose is None:
+            if self.current_pose is None or self.waypoints is None:
                 continue
 
             start_index = self.get_closest_waypoint(self.current_pose)
