@@ -62,7 +62,7 @@ class DBWNode(object):
         # self.controller = TwistController(<Arguments you wish to provide>)
         min_speed = 0
         throttle_pid = PID(1, 1, 1, mn=0, mx=1)
-        brake_pid = PID(1, 1, 1, mn=0, mx=1)
+        brake_pid = PID(600, 10, 0, mn=0, mx=3000)
         steering_pid = PID(4, 1, 2, mn=-math.pi/3, mx=math.pi/3)
         yaw_controller = YawController(wheel_base,
                                        steer_ratio,
@@ -125,7 +125,7 @@ class DBWNode(object):
 
         bcmd = BrakeCmd()
         bcmd.enable = True
-        bcmd.pedal_cmd_type = BrakeCmd.CMD_PERCENT  #other option: BrakeCmd.CMD_TORQUE
+        bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
 
