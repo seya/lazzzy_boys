@@ -255,7 +255,17 @@ class TLDetector(object):
             return stop_line_position, light.state
 #         self.waypoints = None
         return -1, TrafficLight.UNKNOWN
-    def distance(self, waypoints, wp1, wp2):
+    def distance(self, waypoints, car_position, stop_line_position):
+        if car_position <= stop_line_position + 200:
+            return self.sub_distance(waypoints, car_position, stop_line_position)
+        end_waypoint_ind = len(waypoints) -1
+        start_waypoint_ind = 0
+           
+        return self.sub_distance(waypoints, car_position, end_waypoint_ind) + self.sub_distance(waypoints, start_waypoint_ind, stop_line_position)
+    def sub_distance(self,waypoints, wp1,wp2):
+        #this function assumes wp1 <= wp2
+        if wp1 == wp2:
+            return 0
         dist = 0
         dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
         for i in range(wp1, wp2+1):
