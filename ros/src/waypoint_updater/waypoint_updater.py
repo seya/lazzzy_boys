@@ -88,7 +88,7 @@ class WaypointUpdater(object):
 
                 # Base Speed
                 velocity = self.base_velocities[next_index]
-
+                velocity = max(7.2, velocity)
                 # Reduce Speed
                 if distance_to_stop < REDUCE_ZONE and distance_past_stop_line < MOVEON_LINE:
                     velocity = min(math.sqrt(2*distance_to_stop), self.base_velocities[next_index])
@@ -96,7 +96,7 @@ class WaypointUpdater(object):
                 # Green Light
                 if self.red_light_on == False:
                     velocity = self.base_velocities[next_index]
-                
+                    velocity = max(7.2, velocity)               
                 # Set the speed
                 self.set_waypoint_velocity(self.waypoints, next_index, velocity)
                 self.lane.waypoints.append(self.waypoints[next_index])
