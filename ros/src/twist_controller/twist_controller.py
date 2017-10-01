@@ -44,6 +44,11 @@ class Controller(object):
         steering = self.smooth_filter.filt(steering)
 
         # Return values
+        angular_velocity_error = proposed_angular_velocity - current_angular_velocity
+
+        steering = self.steering_controller.get_steering(proposed_linear_velocity, proposed_angular_velocity, current_linear_velocity)
+        steering = steering + self.steering_adjustment_controller.step(angular_velocity_error, sample_time)
+        steering = self.smooth_filter.filt(steering)
         return throttle, brake, steering
 
     def reset(self):
