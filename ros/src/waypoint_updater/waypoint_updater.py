@@ -81,6 +81,10 @@ class WaypointUpdater(object):
                 distance_to_stop = self.distance(next_index, self.stop_line_index - STOP_BUFFER)
                 distance_past_stop_line = self.distance(self.stop_line_index, next_index)
 
+                if distance_to_stop == 0 and next_index > self.last_stop_line_index:
+                    distance_to_stop = self.distance(next_index, len(self.waypoint_distance_table) - 1)
+                    distance_to_stop = distance_to_stop + self.distance(0, self.stop_line_index - STOP_BUFFER)
+
                 # Base Speed
                 velocity = self.base_velocities[next_index]
 
@@ -174,7 +178,7 @@ class WaypointUpdater(object):
     def distance(self, wp1, wp2):
         if wp2 <= wp1:
             return 0
-        return self.waypoint_distance_table[wp2] - self.waypoint_distance_table[max(0, wp1-1)]
+        return self.waypoint_distance_table[wp2] - self.waypoint_distance_table[wp1]
 
 
 if __name__ == '__main__':
