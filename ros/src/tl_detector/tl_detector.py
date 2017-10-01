@@ -12,7 +12,7 @@ import cv2
 import yaml
 import math
 
-STATE_COUNT_THRESHOLD = 3
+STATE_COUNT_THRESHOLD = 2
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
 REDUCE_ZONE = 30 # Reduce zone before the stop line (m)
@@ -45,7 +45,7 @@ class TLDetector(object):
         rely on the position of the light and the camera image to predict it.
         '''
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
+        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb, queue_size=1)
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
@@ -61,10 +61,10 @@ class TLDetector(object):
         self.loop()
         return
     def loop(self):
-        rate = rospy.Rate(10)
+        rate = rospy.Rate(2)
         while not rospy.is_shutdown():
             rate.sleep()
-            if (self.lights == None) or (self.waypoints ==  None):
+            if (self.lights is None) or (self.waypoints is  None) or (self.pose is None):
                 continue
             light_wp, state = self.process_traffic_lights()
 
@@ -79,7 +79,7 @@ class TLDetector(object):
                 self.state = state
             elif self.state_count >= STATE_COUNT_THRESHOLD:
                 self.last_state = self.state
-                light_wp = light_wp if (state == TrafficLight.RED or state == TrafficLight.YELLOW )else -1
+                light_wp = light_wp if (state == TrafficLight.RED)else -1
                 self.last_wp = light_wp
                 self.upcoming_red_light_pub.publish(Int32(light_wp))
             else:
