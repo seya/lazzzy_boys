@@ -135,7 +135,10 @@ class WaypointUpdater(object):
         self.current_pose = msg.pose
 
     def waypoints_cb(self, waypoints):
+        if self.waypoints != None:
+            return
         self.waypoints = waypoints.waypoints
+        self.base_velocities = [self.waypoints[i].twist.twist.linear.x for i in range(len(self.waypoints))]
 
         # create base velocity table
         self.base_velocities = [self.waypoints[i].twist.twist.linear.x for i in range(len(self.waypoints))]
