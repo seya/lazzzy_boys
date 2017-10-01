@@ -179,7 +179,7 @@ class WaypointUpdater(object):
     def distance(self, wp1, wp2):
         if wp2 <= wp1:
             return 0
-        return self.waypoint_distance_table[wp2] - self.waypoint_distance_table[wp1]
+        return self.waypoint_distance_table[wp2] - self.waypoint_distance_table[max(0, wp1-1)]
 
 
 if __name__ == '__main__':
