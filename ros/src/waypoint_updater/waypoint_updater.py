@@ -9,6 +9,7 @@ from geometry_msgs.msg import TwistStamped
 
 import math
 import yaml
+from datetime import datetime
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -81,9 +82,9 @@ class WaypointUpdater(object):
                 distance_to_stop = self.distance(next_index, self.stop_line_index - STOP_BUFFER)
                 distance_past_stop_line = self.distance(self.stop_line_index, next_index)
 
-                if distance_to_stop == 0 and next_index > self.last_stop_line_index:
-                    distance_to_stop = self.distance(next_index, len(self.waypoint_distance_table) - 1)
-                    distance_to_stop = distance_to_stop + self.distance(0, self.stop_line_index - STOP_BUFFER)
+                #if distance_to_stop == 0 and next_index > self.last_stop_line_index:
+                #    distance_to_stop = self.distance(next_index, len(self.waypoint_distance_table) - 1)
+                #    distance_to_stop = distance_to_stop + self.distance(0, self.stop_line_index - STOP_BUFFER)
 
                 # Base Speed
                 velocity = self.base_velocities[next_index]
@@ -140,10 +141,13 @@ class WaypointUpdater(object):
         # create base velocity table
         self.base_velocities = [self.waypoints[i].twist.twist.linear.x for i in range(len(self.waypoints))]
 
-        # create distance table (pre-calculate the distance between the two waypoints)
+        # create distance table (pre-calculate the distance from waypoint 0 to ith waypoint)
         dl = lambda a, b: math.sqrt((a.x - b.x)**2 + (a.y - b.y)**2 + (a.z - b.z)**2)
-        self.waypoint_distance_table = [dl(self.waypoints[i].pose.pose.position, self.waypoints[i-1].pose.pose.position) for i in range(len(self.waypoints))]
-        #self.waypoint_distance_table = self.rotate(self.waypoint_distance_table, -1) #this is nice but not critical
+        cumu_distance = 0
+        self.waypoint_distance_table = [0]
+        for i in range(len(self.waypoints)-1):
+            cumu_distance += dl(self.waypoints[i].pose.pose.position, self.waypoints[i+1].pose.pose.position)
+            self.waypoint_distance_table.append(cumu_distance)
 
         # set the last_stop_line_index
         self.stop_line_positions = [self.get_closest_waypoint(sp_line) for sp_line in self.config['stop_line_positions']]
@@ -173,11 +177,9 @@ class WaypointUpdater(object):
         waypoints[waypoint].twist.twist.linear.x = velocity
 
     def distance(self, wp1, wp2):
-        dist = 0
-        for i in range(wp1, wp2+1):
-            dist += self.waypoint_distance_table[i]
-            wp1 = i
-        return dist
+        if wp2 <= wp1:
+            return 0
+        return self.waypoint_distance_table[wp2] - self.waypoint_distance_table[max(0, wp1-1)]
 
 
 if __name__ == '__main__':
