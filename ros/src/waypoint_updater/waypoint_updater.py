@@ -9,7 +9,6 @@ from geometry_msgs.msg import TwistStamped
 
 import math
 import yaml
-from datetime import datetime
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -82,13 +81,9 @@ class WaypointUpdater(object):
                 distance_to_stop = self.distance(next_index, self.stop_line_index - STOP_BUFFER)
                 distance_past_stop_line = self.distance(self.stop_line_index, next_index)
 
-                #if distance_to_stop == 0 and next_index > self.last_stop_line_index:
-                #    distance_to_stop = self.distance(next_index, len(self.waypoint_distance_table) - 1)
-                #    distance_to_stop = distance_to_stop + self.distance(0, self.stop_line_index - STOP_BUFFER)
-
                 # Base Speed
                 velocity = self.base_velocities[next_index]
-                velocity = max(7.2, velocity)
+
                 # Reduce Speed
                 if distance_to_stop < REDUCE_ZONE and distance_past_stop_line < MOVEON_LINE:
                     velocity = min(math.sqrt(2*distance_to_stop), self.base_velocities[next_index])
@@ -96,7 +91,7 @@ class WaypointUpdater(object):
                 # Green Light
                 if self.red_light_on == False:
                     velocity = self.base_velocities[next_index]
-                    velocity = max(7.2, velocity)               
+
                 # Set the speed
                 self.set_waypoint_velocity(self.waypoints, next_index, velocity)
                 self.lane.waypoints.append(self.waypoints[next_index])
