@@ -15,42 +15,6 @@ Yong Kiat Tay	| yongkiattay@gmail.com | Singapore
 Levin Jian	| jianzhirong@gmail.com | China
 Keisuke Seya	| keisuke.seya@gmail.com | Japan
 
-## Sub Tasks
-
-* Jiandong Jin:
-  - set up team resources (mainly slack channel)
-  - documentation
-
-* Roi Yozevitch:
-  - train a classifer out of hybrid images
-
-* Yong Kiat Tay:
-  - collect and label simulator images
-  - optimize waypoint distance calculation
-
-* Levin Jian:
-  - stable driving to complete the whole lap
-  - collect and label simulator images
-  - train a classifier out of simulator images
-  - train a classifer out of hybrid images
-
-* Keisuke Seya:
-  - stable driving to complete the whole lap
-  - stop the car based on /vehicle/traffic_lights topic
-  - collect and label simulator images
-
-## Schedule
-
-| Task                                                                             | Comments                                                                                                                                                           | target date | current participants      | Status |   |   |
-|----------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|---------------------------|--------|---|---|
-| stable driving to complete the whole lap                                         | most urgent task so far, for now we suspect current unstable behavior is caused by excessive resource consumtion, note the root cause could also be something else | Sep 22      | Levin, Keisuke            | Close  |   |   |
-| Stop the car based on /vehicle/traffic_lights topic                              |                                                                                                                                                                    |             | Keisuke                   | Open   |   |   |
-| collect and label simulator images                                               | the target of this item is to collect and label a few thoudands of traffic light images                                                                            | Sep 23      | Yong Kiat, Levin, Keisuke | Close  |   |   |
-| train a classifier out of simulator images                                       | pending on 3                                                                                                                                                       | Sep 28      | Levin                     | Close  |   |   |
-| train a classifer out of hybrid images                                           | pending on 4                                                                                                                                                       |             | Levin, Yozevitch          | Close  |   |   |
-| Replace /vehicle/traffic_lights topic by actual detection result from classifier | pending on all above                                                                                                                                               | Oct 1       |                           | Open   |   |   |
-| classifier model, training/validaton scripts                                     | This part has been verified on site traffic light images, and should be okay                                                                                       | N/A         |                           | Close  |   |   |
-
 ## Usage
 
 1. Clone the project repository
@@ -194,15 +158,14 @@ Following is the graph that shows the actual calculation of the proposed velocit
 
 
 #### 1.3 Control
-* Drive By Wire Node (DBW Node)-
+* Drive By Wire Node (DBW Node)
   - input: target trajectory
   - output: control commands to vehicle
 
 ##### 1.3.1 PID controllers
 * Since we need to control throttle, brake, and yaw, we deploy three PID controllers independently. The throttle and brake controllers could be combined by taking the advantage of the knowledge that theses controls acts oppositely but we did not take this approach.
 
-##### 1.3.2 PID Controller Algorithms
-There are three types of PID controller algorithms: Interactive Algorithm, Noninteractive Algorithm, and Parallel Algorithm ( http://blog.opticontrols.com/archives/124 ).
+* There are three types of PID controller algorithms: Interactive Algorithm, Noninteractive Algorithm, and Parallel Algorithm ( http://blog.opticontrols.com/archives/124 ). Following diagram shows the structure of each algorithm.  We tested all the three algorithms to find out the best algorithm for this project. The Cohen-Coon and Lambda PID tuning rules from Noninteractive Algorithm seemed the best fit for our case because they were designed to give a very fast response.  However, it turned out it not possible to find the parameters to achieve the short response time that we want.
 
 ![Interactive Algorithm](http://blog.opticontrols.com/wp-content/uploads/2010/03/ideal.png)
 
@@ -210,7 +173,6 @@ There are three types of PID controller algorithms: Interactive Algorithm, Nonin
 
 ![Parallel Algorithm](http://blog.opticontrols.com/wp-content/uploads/2010/03/parallel.png)
 
-* We tested all the three algorithms to find out the best algorithm for this project. The Cohen-Coon and Lambda PID tuning rules from Noninteractive Algorithm seemed the best fit for our case because they were designed to give a very fast response.  However, it turned out it not possible to find the parameters to achieve the short response time that we want.
 
 ##### 1.3.3 Finding PID Parameters
 * While 'Parallel Algorithm' is simple to understand, it is not intuitive to tune.  The reason is that it has no controller gain i.e. the gain parameter affecting all three control parameters i.e. P,I, and D.  Therefore, we needed to tune the parameters manually by checking how each parameter affects the result of the control.  Following is the result of throttle and brake PID controllers with the parameters we found after many try & error testings. The legend: 'current' is the current speed of the car, 'proposed' is the proposed speed of the car, 'brake_200' is the brake torque divided by 200, and 'throttle' is the value of throttle with the percentage control.
