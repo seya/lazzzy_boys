@@ -26,6 +26,7 @@ Keisuke Seya	| keisuke.seya@gmail.com | Japan
   
 * Yong Kiat Tay: 
   - collect and label simulator images
+  - optimize waypoint distance calculation
   
 * Levin Jian: 
   - stable driving to complete the whole lap
@@ -140,6 +141,23 @@ Some udacity students use [tensorflow object detection API](https://github.com/t
 * Drive by wire ROS node -
   - input: target trajectory
   - output: control commands to vehicle
+
+#### 1.4 Waypoint distance calculation optimization
+
+Distance between waypoints is needed for the system to reduce vehicle target velocity when the traffic light is red. In order to improve the computational efficiency, the distances are precalculated and stored in a distance table. The distance between the i-th and the first waypoint is stored into a one dimensional table so that n waypoints will result in a table with n elements. To retrieve the distance between the i-th and the j-th waypoint, the distance function will return the difference in values between the i-th and j-th index of the distance table that is precalculated. The time complexity for calculating the distance will therefore be O(1).
+
+Waypoint distance table
+
+| index | Distance from waypoint i to j |
+|:-:|:-:|
+| 0 | 0 to 0 |
+| 1 | 0 to 1 |
+| 2 | 0 to 2 |
+| 3 | 0 to 3 |
+| 4 | 0 to 4 |
+| ... | ... |
+
+Distance between i-th and j-th waypoint = table[j] - table[i]
 
 ### 2. Car Info
 * [ROS Interface to Lincoln MKZ DBW System](https://bitbucket.org/DataspeedInc/dbw_mkz_ros/src/)
