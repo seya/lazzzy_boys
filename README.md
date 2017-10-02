@@ -20,24 +20,24 @@ Keisuke Seya	| keisuke.seya@gmail.com | Japan
 * Jiandong Jin:
   - set up team resources (mainly slack channel)
   - documentation
-  
-* Roi Yozevitch: 
+
+* Roi Yozevitch:
   - train a classifer out of hybrid images
-  
-* Yong Kiat Tay: 
+
+* Yong Kiat Tay:
   - collect and label simulator images
-  
-* Levin Jian: 
+
+* Levin Jian:
   - stable driving to complete the whole lap
   - collect and label simulator images
   - train a classifier out of simulator images
   - train a classifer out of hybrid images
-  
-* Keisuke Seya: 
+
+* Keisuke Seya:
   - stable driving to complete the whole lap
   - stop the car based on /vehicle/traffic_lights topic
   - collect and label simulator images
-  
+
 ## Schedule
 
 | Task                                                                             | Comments                                                                                                                                                           | target date | current participants      | Status |   |   |
@@ -68,7 +68,7 @@ Inception V4 model are selected as our classifier model, and we use one single m
 ##### 1.1.1 Dataset
 As the classifier is expected to work in both simulator and site, images from both sources are collected.  
 
-A scripts is developed to automatically collect and images from simulator. 
+A scripts is developed to automatically collect and images from simulator.
 
 |                                    | 0-red | 1-yellow | 2-green | Sum  |
 |:-----------------------------------|:-----:|:--------:|:-------:|:----:|
@@ -116,30 +116,87 @@ Below are a few training related charts.
 
 Note that we have to take the test result of accuracy for site test image with a grain of salt, as the number of test images is too small. We notice that models trained with similar steps can obtain as low as 0.9 accuracy.
 
-##### 1.1.5 Reflection on neural netowrk model
+##### 1.1.5 Reflection on neural network model
 
 A few key takeaway after completing the traffic light classifier in this project,
 
 * The power of pretrained model  
 The advantage of using pertrained model in this project is quite obvious due to lack of traffic light images from site. Some udacity students tried training totally new CNN network and reported poor results due to overfitting issue, which is expected.  
-Besides,  using pretrained model allow us to leverage existing model architecture which is the result of years of top notch research, and the architecture has been proven to show very good performance in terms of computation cost, model training convergence and classification accuracy. From the engineering perspective, this is delightfully efficient. 
+Besides,  using pretrained model allow us to leverage existing model architecture which is the result of years of top notch research, and the architecture has been proven to show very good performance in terms of computation cost, model training convergence and classification accuracy. From the engineering perspective, this is delightfully efficient.
+
 * accuracy and latency tradeoff  
 On GPU, the classification speed of our model is 30 fps, but it’s only 2 fps on cpu, which is a bit too slow for us and we would like it to be a bit higher.  
 Several options are considered at the time to improve speed, employing a smaller model like [mobilenet](https://arxiv.org/pdf/1704.04861.pdf), decreasing the size of input image, and recompiling tesnorflow with cpu optimization flags being on. At the end, we went with last approach, and boosted the performance on cpu from 2 fps to 5 fps.
 
 * the danger of overfitting on site images  
 Due to the limited number of site images, there is a relative high possibility that the model might overfit and only perform well on the training images.  Given the size of the training image is fixed, it might work better if we train a SVM classifier from activations somewhere earlier in the pretrained network.
+
 * Tensorflow Object Detection API  
 Some udacity students use [tensorflow object detection API](https://github.com/tensorflow/models/tree/master/research/object_detection) in this project and also report very positive results. It is an accurate machine learning model capable of localizing and identifying multiple objects in a single image. The API is an open source framework built on top of Tensorflow that makes it easy to construct, train and deploy object detection models. This approach is worth exploring too.
 
 
 #### 1.2 Planning
-* Waypoint updater - Sets target velocity for each waypoint based on traffic light and obstacles.
+* Waypoint Updater Node sets the target velocity for each waypoint based on traffic light and obstacles. This operation is done for 200 waypoints starting from the closest waypoint to the current position and the result will be published as a final_waypoints message.  The waytpoints provided by this operation not only provide the proposed waypoints for Waypoint Follower Node to generate the twist command but also provides a buffer enough to reduce the frequency of the final_waypoints update.
+
+##### 1.2.1 Performance Related Considerations
+* The operation for calculating a final_waypoints with enough buffer size uses a lot of cpu resources.  As the result, it could not be finished before the next operation is requested.  In order to avoid such a situation, we needed to do two things. (1) Put this operation where the event cycle is clearly known.  (2) Optimize the distance calculation by using the pre-calculated table.
+
+##### 1.2.2 Kinematics for decelerating the vehicle
+Following is the equation of motion where v is the velocity, u is the initial velocity, a is the deceleration, and d is the distance from the initial position:
+
+<a href="https://www.codecogs.com/eqnedit.php?latex=v^{2}&space;=&space;u^{2}&space;&plus;&space;2ad" target="_blank"><img src="https://latex.codecogs.com/gif.latex?v^{2}&space;=&space;u^{2}&space;&plus;&space;2ad" title="v^{2} = u^{2} + 2ad" /></a>
+
+Therefore we get the following stopping-distance formula by setting v = 0 i.e. the velocity when the car stops.
+
+<a href="https://www.codecogs.com/eqnedit.php?latex=d&space;=&space;-\frac{u^{2}}{2a}" target="_blank"><img src="https://latex.codecogs.com/gif.latex?d&space;=&space;-\frac{u^{2}}{2a}" title="d = -\frac{u^{2}}{2a}" /></a>
+
+Note that 'a' is negative because the car is decelerating.  'a' could be any number but we found that a = -1 m/s^2 works well with the PID control combined.  Therefore the following formula is what we used to calculate the velocity for each waypoint when the car is going to stop.
+
+<a href="https://www.codecogs.com/eqnedit.php?latex=u&space;=&space;\sqrt{2d}" target="_blank"><img src="https://latex.codecogs.com/gif.latex?u&space;=&space;\sqrt{2d}" title="u = \sqrt{2d}" /></a>
+
+Following is the graph that shows the actual calculation of the proposed velocity at the beginning of the simulation.  The line is rough because we set the frequency for the final_waypoints update to be 2Hz. This can be smoothen up using a low pass filter when these values are taken into a PID controller.
+
+![proposed_velocity](./imgs/proposed_velocity.png)
+
+##### 1.2.3 Decrease Zone and Move-on Line Consideration
+* If the car is running too fast before the traffic right, it won't be able to make a safe stop at the stop line (i.e. where the car is supposed to stop before the traffic light).  Therefore we set the velocities for the car to prepare for the stop 30m before the stop line independently of the status of the light. This is similar to what we do when we drive.
+
+* The status of the light changes from Green to Red in a rather short time.  However, the car won't be able to move responsibly because there is a dead band ( a heavy object can not accelerate quickly ).  As the result the car only gains a little speed during a short Green light cycle and sees the Red light again shortly after that, which makes the car likely stop again.  In  order to avoid this problem, we introduced a Move-on line concept to allow the car to move-on if the car passes 5m ahead of the stop line.
+
 
 #### 1.3 Control
-* Drive by wire ROS node -
+* Drive By Wire Node (DBW Node)-
   - input: target trajectory
   - output: control commands to vehicle
+
+##### 1.3.1 PID controllers
+* Since we need to control throttle, brake, and yaw, we deploy three PID controllers independently. The throttle and brake controllers could be combined by taking the advantage of the knowledge that theses controls acts oppositely but we did not take this approach.
+
+* PID Controller Algorithms
+There are three types of PID controller algorithms: Interactive Algorithm, Noninteractive Algorithm, and Parallel Algorithm ( http://blog.opticontrols.com/archives/124 ).
+
+![Interactive Algorithm](http://blog.opticontrols.com/wp-content/uploads/2010/03/ideal.png)
+
+![Noninteractive Algorithm](http://blog.opticontrols.com/wp-content/uploads/2010/03/series.png)
+
+![Parallel Algorithm](http://blog.opticontrols.com/wp-content/uploads/2010/03/parallel.png)
+
+* We tested all the three algorithms to find out the best algorithm for this project. The Cohen-Coon and Lambda PID tuning rules from Noninteractive Algorithm seemed the best fit for our case because they were designed to give a very fast response.  However, it turned out it not possible to find the parameters to achieve the short response time that we want.
+
+##### 1.3.2 Finding PID Parameters
+* While 'Parallel Algorithm' is simple to understand, it is not intuitive to tune.  The reason is that it has no controller gain i.e. the gain parameter affecting all three control parameters i.e. P,I, and D.  Therefore, we needed to tune the parameters manually by checking how each parameter affects the result of the control.  Following is the result of throttle and brake PID controllers with the parameters we found after many try & error testings. The legend: 'current' is the current speed of the car, 'proposed' is the proposed speed of the car, 'brake_200' is the brake torque divided by 200, and 'throttle' is the value of throttle with the percentage control.
+
+![PID Brake Control](./imgs/pid_brake.png)
+![PID Throttle Control](./imgs/pid_throttole.png)
+
+
+##### 1.3.3 Command Control Type
+* The type of the command for the throttle control is selected to use the percentage control. It means the throttle control takes the value between 0 to 1; 0 means no-throttle and 1 means full-throttle.  The type of command for the brake control could be selected to use the percentage control too.  We tried this option first because it seemed simpler than the torque control. Unfortunately the brake control did not work well if the percentage control is selected ( it is kind of working but with this option selected the car could not make a sharp stop ).  We put it back to the torque control and it worked like a charm.  The simulator might not support the percentage brake control compatible with the physical setting of the car, but we do not know for sure.
+
+##### 1.3.4 Reset Control
+* We reset the PID controller every time a new twist command is received. Therefore the integral part of the PID controller won't take much effect.  This is intentional because we wanted to have a quick response time assuming there are no major disturbances on the road.
+
+* The requirement says that "Stop and restart PID controllers depending on the state of /vehicle/dbw_enabled."  In order to follow this requirement, we created a special reset function that reset all the variables including self.last_error which affect the derivative part of PID control.
 
 ### 2. Car Info
 * [ROS Interface to Lincoln MKZ DBW System](https://bitbucket.org/DataspeedInc/dbw_mkz_ros/src/)
@@ -153,7 +210,7 @@ Some udacity students use [tensorflow object detection API](https://github.com/t
   - 726 g/L density of gas. 13.5gal=51.1Liters, max fuel mass=37.1kg
   - 4 passengers = 280 kg
   - Let's just say 2000kg for a deployed car.
-* Decel_Force(newtons) = Mass_car(kg) * Max_decel(meter/s^2) 
+* Decel_Force(newtons) = Mass_car(kg) * Max_decel(meter/s^2)
 * MaxBrakeTorque(newton * meter) = Decel_Force(newtons) * wheel_radius(meters) / 4 wheels
 * MaxBrakeTorque(newton * meter) = Mass_car(kg) * Max_decel(meter/s^2) * wheel_radius(meters) / 4 wheels
 * Wheel radius
@@ -173,5 +230,3 @@ Some udacity students use [tensorflow object detection API](https://github.com/t
 * [Traffic Light Detection Test Video - a ROS bag](https://drive.google.com/file/d/0B2_h37bMVw3iYkdJTlRSUlJIamM/view?usp=sharing)
 * [Starter Repo](https://github.com/udacity/CarND-System-Integration)
 * [ROS Twist](http://docs.ros.org/jade/api/geometry_msgs/html/msg/Twist.html)
-
-
