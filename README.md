@@ -10,7 +10,7 @@ The goal of this project is to design a miniature self driving car system that e
 Team Member | Udacity Account Eamil|Location
 ----------- | ---------------------|----------- |
 Jiandong Jin | jjdblast@gmail.com| China
-Roi Yozevitch	| yozevitch@gmail.com | Turkey
+Roi Yozevitch	| yozevitch@gmail.com | Israel
 Yong Kiat Tay	| yongkiattay@gmail.com | Singapore
 Levin Jian	| jianzhirong@gmail.com | China
 Keisuke Seya	| keisuke.seya@gmail.com | Japan
