@@ -26,6 +26,7 @@ Keisuke Seya	| keisuke.seya@gmail.com | Japan
 
 * Yong Kiat Tay:
   - collect and label simulator images
+  - optimize waypoint distance calculation
 
 * Levin Jian:
   - stable driving to complete the whole lap
@@ -167,7 +168,7 @@ Some udacity students use [tensorflow object detection API](https://github.com/t
 * Waypoint Updater Node sets the target velocity for each waypoint based on traffic light and obstacles. This operation is done for 200 waypoints starting from the closest waypoint to the current position and the result will be published as a final_waypoints message.  The waytpoints provided by this operation not only provide the proposed waypoints for Waypoint Follower Node to generate the twist command but also provides a buffer enough to reduce the frequency of the final_waypoints update.
 
 ##### 1.2.1 Performance Related Considerations
-* The operation for calculating a final_waypoints with enough buffer size uses a lot of cpu resources.  As the result, it could not be finished before the next operation is requested.  In order to avoid such a situation, we needed to do two things. (1) Put this operation where the event cycle is clearly known.  (2) Optimize the distance calculation by using the pre-calculated table.
+* The operation for calculating a final_waypoints with enough buffer size uses a lot of cpu resources.  As the result, it could not be finished before the next operation is requested.  In order to avoid such a situation, we needed to do two things. (1) Put this operation where the event cycle is clearly known.  (2) Optimize the distance calculation by using the pre-calculated table. Details about this optimization is describled in the following section [1.4 Waypoint distance calculation optimization](#optimization)
 
 ##### 1.2.2 Kinematics for decelerating the vehicle
 Following is the equation of motion where v is the velocity, u is the initial velocity, a is the deceleration, and d is the distance from the initial position:
@@ -200,7 +201,7 @@ Following is the graph that shows the actual calculation of the proposed velocit
 ##### 1.3.1 PID controllers
 * Since we need to control throttle, brake, and yaw, we deploy three PID controllers independently. The throttle and brake controllers could be combined by taking the advantage of the knowledge that theses controls acts oppositely but we did not take this approach.
 
-* PID Controller Algorithms
+##### 1.3.2 PID Controller Algorithms
 There are three types of PID controller algorithms: Interactive Algorithm, Noninteractive Algorithm, and Parallel Algorithm ( http://blog.opticontrols.com/archives/124 ).
 
 ![Interactive Algorithm](http://blog.opticontrols.com/wp-content/uploads/2010/03/ideal.png)
@@ -211,20 +212,37 @@ There are three types of PID controller algorithms: Interactive Algorithm, Nonin
 
 * We tested all the three algorithms to find out the best algorithm for this project. The Cohen-Coon and Lambda PID tuning rules from Noninteractive Algorithm seemed the best fit for our case because they were designed to give a very fast response.  However, it turned out it not possible to find the parameters to achieve the short response time that we want.
 
-##### 1.3.2 Finding PID Parameters
+##### 1.3.3 Finding PID Parameters
 * While 'Parallel Algorithm' is simple to understand, it is not intuitive to tune.  The reason is that it has no controller gain i.e. the gain parameter affecting all three control parameters i.e. P,I, and D.  Therefore, we needed to tune the parameters manually by checking how each parameter affects the result of the control.  Following is the result of throttle and brake PID controllers with the parameters we found after many try & error testings. The legend: 'current' is the current speed of the car, 'proposed' is the proposed speed of the car, 'brake_200' is the brake torque divided by 200, and 'throttle' is the value of throttle with the percentage control.
 
 ![PID Brake Control](./imgs/pid_brake.png)
 ![PID Throttle Control](./imgs/pid_throttole.png)
 
 
-##### 1.3.3 Command Control Type
+##### 1.3.4 Command Control Type
 * The type of the command for the throttle control is selected to use the percentage control. It means the throttle control takes the value between 0 to 1; 0 means no-throttle and 1 means full-throttle.  The type of command for the brake control could be selected to use the percentage control too.  We tried this option first because it seemed simpler than the torque control. Unfortunately the brake control did not work well if the percentage control is selected ( it is kind of working but with this option selected the car could not make a sharp stop ).  We put it back to the torque control and it worked like a charm.  The simulator might not support the percentage brake control compatible with the physical setting of the car, but we do not know for sure.
 
-##### 1.3.4 Reset Control
+##### 1.3.5 Reset Control
 * We reset the PID controller every time a new twist command is received. Therefore the integral part of the PID controller won't take much effect.  This is intentional because we wanted to have a quick response time assuming there are no major disturbances on the road.
 
 * The requirement says that "Stop and restart PID controllers depending on the state of /vehicle/dbw_enabled."  In order to follow this requirement, we created a special reset function that reset all the variables including self.last_error which affect the derivative part of PID control.
+
+#### <a name="optimization">　1.4 Waypoint distance calculation optimization
+
+Distance between waypoints is needed for the system to reduce vehicle target velocity when the traffic light is red. In order to improve the computational efficiency, the distances are precalculated and stored in a distance table. The distance between the i-th and the first waypoint is stored into a one dimensional table so that n waypoints will result in a table with n elements. To retrieve the distance between the i-th and the j-th waypoint, the distance function will return the difference in values between the i-th and j-th index of the distance table that is precalculated. The time complexity for calculating the distance will therefore be O(1).
+
+Waypoint distance table
+
+| Index | Distance from waypoint i to j |
+|:-:|:-:|
+| 0 | 0 to 0 |
+| 1 | 0 to 1 |
+| 2 | 0 to 2 |
+| 3 | 0 to 3 |
+| 4 | 0 to 4 |
+| ... | ... |
+
+Distance between i-th and j-th waypoint = table[j] - table[i]
 
 ### 2. Car Info
 * [ROS Interface to Lincoln MKZ DBW System](https://bitbucket.org/DataspeedInc/dbw_mkz_ros/src/)
