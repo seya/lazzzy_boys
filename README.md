@@ -148,7 +148,7 @@ Distance between waypoints is needed for the system to reduce vehicle target vel
 
 Waypoint distance table
 
-| index | Distance from waypoint i to j |
+| Index | Distance from waypoint i to j |
 |:-:|:-:|
 | 0 | 0 to 0 |
 | 1 | 0 to 1 |
