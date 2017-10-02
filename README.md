@@ -9,7 +9,7 @@ The goal of this project is to design a miniature self driving car system that e
 
 Team Member | Udacity Account Eamil|Location
 ----------- | ---------------------|----------- |
-Jiandong Jin | jjdblast@gmail.com| China
+Jiandong Jin (Team leader) | jjdblast@gmail.com| China
 Roi Yozevitch	| yozevitch@gmail.com | Israel
 Yong Kiat Tay	| yongkiattay@gmail.com | Singapore
 Levin Jian	| jianzhirong@gmail.com | China
@@ -132,7 +132,7 @@ Some udacity students use [tensorflow object detection API](https://github.com/t
 * Waypoint Updater Node sets the target velocity for each waypoint based on traffic light and obstacles. This operation is done for 200 waypoints starting from the closest waypoint to the current position and the result will be published as a final_waypoints message.  The waytpoints provided by this operation not only provide the proposed waypoints for Waypoint Follower Node to generate the twist command but also provides a buffer enough to reduce the frequency of the final_waypoints update.
 
 ##### 1.2.1 Performance Related Considerations
-* The operation for calculating a final_waypoints with enough buffer size uses a lot of cpu resources.  As the result, it could not be finished before the next operation is requested.  In order to avoid such a situation, we needed to do two things. (1) Put this operation where the event cycle is clearly known.  (2) Optimize the distance calculation by using the pre-calculated table. Details about this optimization is describled in the following section [1.4 Waypoint distance calculation optimization](#optimization)
+* The operation for calculating a final_waypoints with enough buffer size uses a lot of cpu resources.  As the result, it could not be finished before the next operation is requested.  In order to avoid such a situation, we needed to do two things. (1) Put this operation where the event cycle is clearly known.  (2) Optimize the distance calculation by using the pre-calculated table. Details about this optimization is describled in section 1.4.
 
 ##### 1.2.2 Kinematics for decelerating the vehicle
 Following is the equation of motion where v is the velocity, u is the initial velocity, a is the deceleration, and d is the distance from the initial position:
@@ -189,7 +189,7 @@ Following is the graph that shows the actual calculation of the proposed velocit
 
 * The requirement says that "Stop and restart PID controllers depending on the state of /vehicle/dbw_enabled."  In order to follow this requirement, we created a special reset function that reset all the variables including self.last_error which affect the derivative part of PID control.
 
-#### <a name="optimization">　1.4 Waypoint distance calculation optimization
+#### 1.4 Waypoint distance calculation optimization
 
 Distance between waypoints is needed for the system to reduce vehicle target velocity when the traffic light is red. In order to improve the computational efficiency, the distances are precalculated and stored in a distance table. The distance between the i-th and the first waypoint is stored into a one dimensional table so that n waypoints will result in a table with n elements. To retrieve the distance between the i-th and the j-th waypoint, the distance function will return the difference in values between the i-th and j-th index of the distance table that is precalculated. The time complexity for calculating the distance will therefore be O(1).
 
