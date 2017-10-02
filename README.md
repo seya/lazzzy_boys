@@ -10,7 +10,7 @@ The goal of this project is to design a miniature self driving car system that e
 Team Member | Udacity Account Eamil|Location
 ----------- | ---------------------|----------- |
 Jiandong Jin | jjdblast@gmail.com| China
-Roi Yozevitch	| yozevitch@gmail.com | Turkey
+Roi Yozevitch	| yozevitch@gmail.com | Israel
 Yong Kiat Tay	| yongkiattay@gmail.com | Singapore
 Levin Jian	| jianzhirong@gmail.com | China
 Keisuke Seya	| keisuke.seya@gmail.com | Japan
@@ -50,8 +50,36 @@ Keisuke Seya	| keisuke.seya@gmail.com | Japan
 | Replace /vehicle/traffic_lights topic by actual detection result from classifier | pending on all above                                                                                                                                               | Oct 1       |                           | Open   |   |   |
 | classifier model, training/validaton scripts                                     | This part has been verified on site traffic light images, and should be okay                                                                                       | N/A         |                           | Close  |   |   |
 
+## Usage
 
+1. Clone the project repository
+```bash
+git clone https://github.com/udacity/carnd_capstone.git
+```
 
+2. Install python dependencies
+```bash
+cd carnd_capstone
+pip install -r requirements.txt
+```
+
+3. Prepare the classification model : Download our frozen classification model from here : https://slack-files.com/T2HQV035L-F7C93TQFQ-995473e03c. Then create a new folder ./traffic_light_classifier/logs/deploy and put graph_optimized.pb file it into that folder.
+
+4. Make and run styx
+```bash
+cd ros
+catkin_make
+source devel/setup.sh
+roslaunch launch/styx.launch
+```
+
+5. Run the simulator
+```bash
+unzip lights_no_cars.zip
+cd lights_no_cars
+chmod +x ros_test.x86_64
+./ros_test.x86_64
+```
 
 ## Project Components
 
