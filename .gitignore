@@ -2,9 +2,9 @@
 
 build
 devel
-traffic_light_classifier/logs/
 profile.tmp
 .project
 .pydevproject
 traffic_light_classifier/data/
 simulator/
+.DS_Store
