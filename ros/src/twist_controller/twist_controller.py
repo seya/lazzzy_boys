@@ -55,3 +55,8 @@ class Controller(object):
         self.throttle_controller.reset()
         self.brake_controller.reset()
         self.steering_adjustment_controller.reset()
+
+    def reset_on_dbw_enabled(self):
+        self.throttle_controller.reset_on_dbw_enabled()
+        self.brake_controller.reset_on_dbw_enabled()
+        self.steering_adjustment_controller.reset_on_dbw_enabled()
