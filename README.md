@@ -18,7 +18,9 @@ cd carnd_capstone
 pip install -r requirements.txt
 ```
 
-3. Prepare the classification model : Download our frozen classification model from here : https://slack-files.com/T2HQV035L-F7C93TQFQ-995473e03c. Then create a new folder ./traffic_light_classifier/logs/deploy and put graph_optimized.pb file it into that folder.
+3. If you're using Git LFS (https://git-lfs.github.com/) you can skip this step becuase you already downloaded the model when you cloned this repositoy in the step1.
+
+   Prepare the classification model : Download our frozen classification model from here : https://github.com/seya/lazzzy_boys/blob/master/traffic_light_classifier/logs/deploy/graph_optimized.pb. Then create a new folder ./traffic_light_classifier/logs/deploy and put graph_optimized.pb file it into that folder.
 
 4. Make and run styx
 ```bash
