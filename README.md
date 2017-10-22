@@ -5,16 +5,6 @@ Self-Driving Car Engineer Nanodegree Program, Capstone Project
 
 The goal of this project is to design a miniature self driving car system that enable Udacity car Carla  to drive around the test track using waypoint navigation. Traffic lights are placed in the test track, Carla needs to stop and start properly depending on the traffic light in front of it. Our system consists of three major components. Perception component detects and classify the traffic light ahead of the car via images captured from the car camera. Planning component set target velocity for the waypoints ahead of vehicle depending on desired vehicle behavior.  Control component  actuates the throttle, brake,and steering to successfully navigate the waypoints with correct target velocity. A car/test track simulator is also provided to facilitate the development so that we can test our codes before submitting them to be tested on Carla.
 
-## Lazzzy_boys Team members
-
-Team Member | Udacity Account Eamil|Location
------------ | ---------------------|----------- |
-Jiandong Jin (Team leader) | jjdblast@gmail.com| China
-Roi Yozevitch	| yozevitch@gmail.com | Israel
-Yong Kiat Tay	| yongkiattay@gmail.com | Singapore
-Levin Jian	| jianzhirong@gmail.com | China
-Keisuke Seya	| keisuke.seya@gmail.com | Japan
-
 ## Usage
 
 1. Clone the project repository
